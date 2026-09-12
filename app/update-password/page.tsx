@@ -6,12 +6,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import styles from "@/app/auth.module.css";
 
-export default function SignupPage() {
+export default function UpdatePasswordPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
@@ -19,13 +17,9 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setMessage(null);
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.updateUser({ password });
 
     setLoading(false);
 
@@ -34,41 +28,19 @@ export default function SignupPage() {
       return;
     }
 
-    if (!data.session) {
-      setMessage(
-        "Account created. Confirm your email, then an existing team member must approve your account before you can sign in.",
-      );
-      return;
-    }
-
     await supabase.auth.signOut();
-    setMessage(
-      "Account created. An existing team member must approve your account before you can sign in.",
-    );
+    router.replace("/login?status=password-updated");
+    router.refresh();
   }
 
   return (
     <main className={styles.auth}>
       <div className={styles.card}>
-        <h1 className={styles.title}>Create an account</h1>
-        <p className={styles.subtitle}>
-          Accounts are used to track who adds and edits records.
-        </p>
+        <h1 className={styles.title}>Set a new password</h1>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <label className={styles.label}>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className={styles.input}
-            />
-          </label>
-
-          <label className={styles.label}>
-            Password
+            New password
             <input
               type="password"
               value={password}
@@ -80,17 +52,15 @@ export default function SignupPage() {
           </label>
 
           {error && <p className={styles.error}>{error}</p>}
-          {message && <p className={styles.message}>{message}</p>}
 
           <button type="submit" disabled={loading} className={styles.button}>
-            {loading ? "Creating..." : "Create account"}
+            {loading ? "Updating..." : "Update password"}
           </button>
         </form>
 
         <p className={styles.footer}>
-          Already have an account?{" "}
           <Link href="/login" className={styles.link}>
-            Sign in
+            Back to sign in
           </Link>
         </p>
       </div>

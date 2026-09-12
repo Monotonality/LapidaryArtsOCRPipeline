@@ -6,12 +6,18 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import styles from "@/app/auth.module.css";
 
-export default function SignupPage() {
+const STATUS_MESSAGES: Record<string, string> = {
+  pending: "Your account is pending approval by an existing team member.",
+  rejected: "Your account was not approved. Contact a team member.",
+  error: "That link was invalid or expired. Try again.",
+  "password-updated": "Password updated. Sign in with your new password.",
+};
+
+export default function LoginForm({ status }: { status?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
@@ -19,41 +25,56 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setMessage(null);
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
-    setLoading(false);
-
     if (error) {
+      setLoading(false);
       setError(error.message);
       return;
     }
 
-    if (!data.session) {
-      setMessage(
-        "Account created. Confirm your email, then an existing team member must approve your account before you can sign in.",
+    const user = data.user;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("status")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    const { count: approvedCount } = await supabase
+      .from("profiles")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "approved");
+
+    const isApproved =
+      approvedCount && approvedCount > 0
+        ? profile?.status === "approved"
+        : true;
+
+    if (!isApproved) {
+      await supabase.auth.signOut();
+      setLoading(false);
+      setError(
+        "Your account is pending approval by an existing team member.",
       );
       return;
     }
 
-    await supabase.auth.signOut();
-    setMessage(
-      "Account created. An existing team member must approve your account before you can sign in.",
-    );
+    setLoading(false);
+    router.push("/dashboard");
+    router.refresh();
   }
 
   return (
     <main className={styles.auth}>
       <div className={styles.card}>
-        <h1 className={styles.title}>Create an account</h1>
-        <p className={styles.subtitle}>
-          Accounts are used to track who adds and edits records.
-        </p>
+        <h1 className={styles.title}>Lapidary Arts Records</h1>
+        <p className={styles.subtitle}>Sign in to access the dashboard.</p>
 
         <form onSubmit={handleSubmit} className={styles.form}>
           <label className={styles.label}>
@@ -73,24 +94,29 @@ export default function SignupPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              minLength={6}
               required
               className={styles.input}
             />
           </label>
 
+          <Link href="/forgot-password" className={styles.link}>
+            Forgot password?
+          </Link>
+
+          {status && STATUS_MESSAGES[status] && (
+            <p className={styles.message}>{STATUS_MESSAGES[status]}</p>
+          )}
           {error && <p className={styles.error}>{error}</p>}
-          {message && <p className={styles.message}>{message}</p>}
 
           <button type="submit" disabled={loading} className={styles.button}>
-            {loading ? "Creating..." : "Create account"}
+            {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
         <p className={styles.footer}>
-          Already have an account?{" "}
-          <Link href="/login" className={styles.link}>
-            Sign in
+          No account?{" "}
+          <Link href="/signup" className={styles.link}>
+            Create one
           </Link>
         </p>
       </div>

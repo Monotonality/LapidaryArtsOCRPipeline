@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { setSignupStatus } from "./actions";
 
 type ProfileRef =
   | { email: string | null }
@@ -21,6 +22,12 @@ type RecordRow = {
   updater: ProfileRef;
 };
 
+type PendingProfile = {
+  id: string;
+  email: string;
+  created_at: string;
+};
+
 function emailOf(ref: ProfileRef): string | null {
   if (Array.isArray(ref)) return ref[0]?.email ?? null;
   return ref?.email ?? null;
@@ -37,6 +44,33 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  const { data: myProfile } = await supabase
+    .from("profiles")
+    .select("status")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const { count: approvedCount } = await supabase
+    .from("profiles")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "approved");
+
+  // Bootstrap: until the first approval exists, the first signups are admitted.
+  const isApproved =
+    approvedCount && approvedCount > 0
+      ? myProfile?.status === "approved"
+      : true;
+
+  if (!isApproved) {
+    redirect("/login?status=pending");
+  }
+
+  const { data: pendingQuery } = await supabase
+    .from("profiles")
+    .select("id, email, created_at")
+    .eq("status", "pending")
+    .order("created_at", { ascending: true });
+
   const { data: rows } = await supabase
     .from("records")
     .select(
@@ -46,6 +80,7 @@ export default async function DashboardPage() {
     .limit(50);
 
   const records = (rows ?? []) as RecordRow[];
+  const pending = (pendingQuery ?? []) as PendingProfile[];
 
   return (
     <main style={{ padding: "2rem", maxWidth: "64rem", margin: "0 auto" }}>
@@ -80,6 +115,62 @@ export default async function DashboardPage() {
           </button>
         </form>
       </header>
+
+      <section style={{ marginBottom: "2rem" }}>
+        <h2 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.75rem" }}>
+          Pending signups{" "}
+          {pending.length > 0 && (
+            <span style={{ opacity: 0.6, fontWeight: 400 }}>
+              ({pending.length})
+            </span>
+          )}
+        </h2>
+
+        {pending.length === 0 ? (
+          <p style={{ opacity: 0.7, fontSize: "0.9375rem" }}>
+            No signups waiting for approval.
+          </p>
+        ) : (
+          <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+            {pending.map((p) => (
+              <li
+                key={p.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "1rem",
+                  padding: "0.625rem 0.875rem",
+                  border: "1px solid var(--foreground)",
+                  borderRadius: "0.375rem",
+                }}
+              >
+                <div>
+                  <p style={{ fontWeight: 500 }}>{p.email}</p>
+                  <p style={{ opacity: 0.6, fontSize: "0.8125rem" }}>
+                    Requested {new Date(p.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: "0.5rem" }}>
+                  <form action={setSignupStatus.bind(null, p.id, "approved")}>
+                    <button
+                      type="submit"
+                      style={approveButtonStyle}
+                    >
+                      Approve
+                    </button>
+                  </form>
+                  <form action={setSignupStatus.bind(null, p.id, "rejected")}>
+                    <button type="submit" style={rejectButtonStyle}>
+                      Reject
+                    </button>
+                  </form>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <section>
         <div
@@ -162,4 +253,24 @@ const thStyle: React.CSSProperties = {
 
 const tdStyle: React.CSSProperties = {
   padding: "0.5rem 0.625rem",
+};
+
+const approveButtonStyle: React.CSSProperties = {
+  padding: "0.375rem 0.75rem",
+  border: "none",
+  borderRadius: "0.375rem",
+  background: "#15803d",
+  color: "#ffffff",
+  cursor: "pointer",
+  fontSize: "0.875rem",
+};
+
+const rejectButtonStyle: React.CSSProperties = {
+  padding: "0.375rem 0.75rem",
+  border: "1px solid #b91c1c",
+  background: "transparent",
+  color: "#b91c1c",
+  borderRadius: "0.375rem",
+  cursor: "pointer",
+  fontSize: "0.875rem",
 };

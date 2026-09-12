@@ -1,17 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import styles from "@/app/auth.module.css";
 
-export default function SignupPage() {
-  const router = useRouter();
+export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const supabase = createClient();
@@ -22,9 +19,8 @@ export default function SignupPage() {
     setMessage(null);
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
     });
 
     setLoading(false);
@@ -34,25 +30,17 @@ export default function SignupPage() {
       return;
     }
 
-    if (!data.session) {
-      setMessage(
-        "Account created. Confirm your email, then an existing team member must approve your account before you can sign in.",
-      );
-      return;
-    }
-
-    await supabase.auth.signOut();
     setMessage(
-      "Account created. An existing team member must approve your account before you can sign in.",
+      "If that email has an account, a password reset link has been sent.",
     );
   }
 
   return (
     <main className={styles.auth}>
       <div className={styles.card}>
-        <h1 className={styles.title}>Create an account</h1>
+        <h1 className={styles.title}>Reset your password</h1>
         <p className={styles.subtitle}>
-          Accounts are used to track who adds and edits records.
+          We'll email you a link to set a new password.
         </p>
 
         <form onSubmit={handleSubmit} className={styles.form}>
@@ -67,30 +55,17 @@ export default function SignupPage() {
             />
           </label>
 
-          <label className={styles.label}>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              minLength={6}
-              required
-              className={styles.input}
-            />
-          </label>
-
           {error && <p className={styles.error}>{error}</p>}
           {message && <p className={styles.message}>{message}</p>}
 
           <button type="submit" disabled={loading} className={styles.button}>
-            {loading ? "Creating..." : "Create account"}
+            {loading ? "Sending..." : "Send reset link"}
           </button>
         </form>
 
         <p className={styles.footer}>
-          Already have an account?{" "}
           <Link href="/login" className={styles.link}>
-            Sign in
+            Back to sign in
           </Link>
         </p>
       </div>
