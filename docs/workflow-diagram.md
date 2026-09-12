@@ -20,10 +20,9 @@ flowchart TD
 
     Login --> Dash
     Dash -->|query / filter / view| DB
-    Dash -->|export CSV| CSV
-    CSV --> DB
-    Dash -->|new record| Create
-    Create --> Photo
+    DB -->|feed| CSV
+    Dash -->|export| CSV
+    Dash -->|new record| Photo
     Photo --> OCR
     OCR --> Validate
     Validate -->|reviewed & approved| Create
