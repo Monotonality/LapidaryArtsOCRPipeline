@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/app/navbar";
 import { DeleteAccountButton } from "./delete-account-button";
+import { ChangePasswordForm } from "./change-password-form";
 import styles from "./settings.module.css";
 
 export default async function SettingsPage() {
@@ -67,6 +68,13 @@ export default async function SettingsPage() {
               </div>
             )}
           </dl>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2>Password</h2>
+          </div>
+          <ChangePasswordForm />
         </section>
 
         <section className={styles.section}>

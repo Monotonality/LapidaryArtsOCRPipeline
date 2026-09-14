@@ -14,6 +14,19 @@ export async function deleteAccount(): Promise<{ error?: string }> {
     redirect("/login");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("is_admin")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profile?.is_admin) {
+    return {
+      error:
+        "You're the only admin. Transfer the admin role to someone else first.",
+    };
+  }
+
   const { error } = await supabase
     .from("profiles")
     .update({

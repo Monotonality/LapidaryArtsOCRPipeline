@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import styles from "./team.module.css";
+import styles from "./settings.module.css";
 
 export function ChangePasswordForm() {
   const [password, setPassword] = useState("");
@@ -45,7 +45,7 @@ export function ChangePasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className={styles.addForm}>
+    <form onSubmit={handleSubmit} className={styles.form}>
       {error && (
         <div role="alert" className={styles.alertError}>
           {error}
@@ -57,7 +57,7 @@ export function ChangePasswordForm() {
         </div>
       )}
 
-      <div className={styles.addFields}>
+      <div className={styles.formRow}>
         <label className={styles.label}>
           New password
           <input
@@ -86,7 +86,7 @@ export function ChangePasswordForm() {
           />
         </label>
 
-        <button type="submit" disabled={loading} className={styles.addButton}>
+        <button type="submit" disabled={loading} className={styles.saveButton}>
           {loading ? "Saving…" : "Change password"}
         </button>
       </div>

@@ -4,7 +4,7 @@ import { Navbar } from "@/app/navbar";
 import { AddMemberForm } from "./add-member-form";
 import { MemberToggle } from "./member-toggle";
 import { ResetMemberPassword } from "./reset-member-password";
-import { ChangePasswordForm } from "./change-password-form";
+import { TransferAdminForm } from "./transfer-admin-form";
 import styles from "./team.module.css";
 
 type Member = {
@@ -27,12 +27,16 @@ export default async function TeamPage() {
 
   const { data: myProfile } = await supabase
     .from("profiles")
-    .select("status")
+    .select("status, is_admin")
     .eq("id", user.id)
     .maybeSingle();
 
   if (myProfile?.status === "deleted") {
     redirect("/login?status=deleted");
+  }
+
+  if (!myProfile?.is_admin) {
+    redirect("/dashboard");
   }
 
   const { data: query } = await supabase
@@ -64,12 +68,17 @@ export default async function TeamPage() {
 
         <section className={styles.section}>
           <div className={styles.sectionHead}>
-            <h2>Change my password</h2>
+            <h2>Transfer admin role</h2>
             <p className={styles.sectionHelp}>
-              Replaces the temporary password you were given.
+              There is only one admin. Type the member's email to confirm the
+              transfer.
             </p>
           </div>
-          <ChangePasswordForm />
+          <TransferAdminForm
+            members={members
+              .filter((m) => m.status !== "deleted" && m.id !== user.id)
+              .map((m) => ({ id: m.id, email: m.email }))}
+          />
         </section>
 
         <section className={styles.section}>
