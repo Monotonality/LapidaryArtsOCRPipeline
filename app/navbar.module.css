@@ -1,0 +1,97 @@
+/* Lapidary Arts Records — top navigation.
+   Tokens from app/globals.css (see docs/style-guide.md). */
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.inner {
+  width: 100%;
+  max-width: 64rem;
+  margin: 0 auto;
+  padding: var(--space-3) var(--space-6);
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.brandLink {
+  color: inherit;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.link {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition:
+    background 150ms var(--ease),
+    color 150ms var(--ease);
+}
+
+.link:hover {
+  background: var(--surface-muted);
+  color: var(--text);
+}
+
+.linkActive {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.session {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.userEmail {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.signOut {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 150ms var(--ease),
+    border-color 150ms var(--ease),
+    color 150ms var(--ease);
+}
+
+.signOut:hover {
+  background: var(--surface-muted);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+@media (max-width: 760px) {
+  .inner {
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .session {
+    width: 100%;
+    justify-content: space-between;
+  }
+}

@@ -18,5 +18,5 @@ export async function setSignupStatus(
     console.error("Failed to update signup status", error);
   }
 
-  revalidatePath("/dashboard");
+  revalidatePath("/pending");
 }

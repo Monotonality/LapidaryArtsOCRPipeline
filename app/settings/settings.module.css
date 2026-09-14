@@ -11,73 +11,6 @@
   gap: var(--space-8);
 }
 
-/* ---- Masthead (shared chrome with the dashboard) ---- */
-
-.masthead {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  padding: var(--space-2) 0 var(--space-5);
-  border-bottom: 1px solid var(--border);
-  animation: rise 450ms var(--ease) both;
-}
-
-.session {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.userEmail {
-  font-size: 0.8125rem;
-  color: var(--text-muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.back {
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  text-decoration: none;
-  transition:
-    background 150ms var(--ease),
-    border-color 150ms var(--ease),
-    color 150ms var(--ease);
-}
-
-.back:hover {
-  background: var(--surface-muted);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.signOut {
-  padding: var(--space-2) var(--space-4);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition:
-    background 150ms var(--ease),
-    border-color 150ms var(--ease),
-    color 150ms var(--ease);
-}
-
-.signOut:hover {
-  background: var(--surface-muted);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
 /* ---- Page heading ---- */
 
 .pageTitle {
@@ -302,10 +235,6 @@
 /* ---- Narrow screens ---- */
 
 @media (max-width: 760px) {
-  .masthead {
-    flex-wrap: wrap;
-  }
-
   .danger {
     flex-direction: column;
     align-items: stretch;

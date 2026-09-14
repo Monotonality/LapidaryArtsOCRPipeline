@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/app/navbar";
-import { RecordsView, type RecordRow } from "./records-view";
-import styles from "./dashboard.module.css";
+import { AddRecord } from "./add-form";
+import styles from "./add.module.css";
 
-export default async function DashboardPage() {
+export default async function AddPage() {
   const supabase = await createClient();
 
   const {
@@ -36,26 +36,16 @@ export default async function DashboardPage() {
     redirect("/login?status=pending");
   }
 
-  const { data: rows } = await supabase
-    .from("records")
-    .select(
-      "id, client_name, phone_number, date, date_promised, price, status, created_at, updated_at, creator:profiles!records_created_by_fkey(email), updater:profiles!records_updated_by_fkey(email)",
-    )
-    .order("created_at", { ascending: false })
-    .limit(1000);
-
-  const records = (rows ?? []) as RecordRow[];
-
   return (
     <>
       <Navbar email={user.email ?? ""} />
 
       <main className={styles.main}>
         <div className={styles.pageTitle}>
-          <h1>Records ledger</h1>
+          <h1>Add record</h1>
         </div>
 
-        <RecordsView records={records} />
+        <AddRecord />
       </main>
     </>
   );
