@@ -21,7 +21,15 @@ const STATUS_MESSAGES: Record<string, string> = {
   "password-updated": "Password updated. Sign in with your new password.",
 };
 
-export default function LoginForm({ status }: { status?: string }) {
+export default function LoginForm({
+  status,
+  reason,
+  details,
+}: {
+  status?: string;
+  reason?: string;
+  details?: string;
+}) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -96,6 +104,14 @@ export default function LoginForm({ status }: { status?: string }) {
           }
         >
           {STATUS_MESSAGES[status!]}
+          {reason &&
+            (status === "error" ? (
+              <span className={styles.debugReason}>
+                <br />
+                [debug] {reason}
+                {details ? ` · ${details}` : ""}
+              </span>
+            ) : null)}
         </div>
       )}
       {error && (

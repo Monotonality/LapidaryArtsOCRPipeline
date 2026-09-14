@@ -41,6 +41,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/signup") ||
     pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/update-password") ||
+    pathname.startsWith("/confirm-password") ||
     pathname.startsWith("/auth");
 
   if (!isAuthed && !isPublicPath) {

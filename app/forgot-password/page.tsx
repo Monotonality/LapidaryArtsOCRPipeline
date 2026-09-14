@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { getSiteUrl } from "@/lib/site-url";
 import { AuthShell } from "@/app/auth-shell";
 import styles from "@/app/auth.module.css";
 
@@ -21,7 +22,7 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/update-password")}`,
+      redirectTo: `${getSiteUrl()}/auth/callback?next=${encodeURIComponent("/update-password")}`,
     });
 
     setLoading(false);
@@ -31,8 +32,15 @@ export default function ForgotPasswordPage() {
       return;
     }
 
+    const cookieKeys = document.cookie
+      .split(";")
+      .map((c) => c.trim().split("=")[0])
+      .filter((k) => k.includes("-code-verifier"));
+
     setMessage(
-      "If that email has an account, a password reset link has been sent.",
+      cookieKeys.length > 0
+        ? `If that email has an account, a password reset link has been sent. [debug] verifier cookie present: ${cookieKeys.join(", ")}`
+        : "If that email has an account, a password reset link has been sent. [debug] NO verifier cookie was written in this browser",
     );
   }
 
