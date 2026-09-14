@@ -38,9 +38,6 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isPublicPath =
     pathname.startsWith("/login") ||
-    pathname.startsWith("/forgot-password") ||
-    pathname.startsWith("/update-password") ||
-    pathname.startsWith("/confirm-password") ||
     pathname.startsWith("/auth");
 
   if (!isAuthed && !isPublicPath) {

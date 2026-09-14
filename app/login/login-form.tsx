@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { AuthShell } from "@/app/auth-shell";
 import styles from "@/app/auth.module.css";
@@ -10,13 +9,11 @@ import styles from "@/app/auth.module.css";
 const STATUS_KINDS: Record<string, "ok" | "bad"> = {
   deleted: "bad",
   error: "bad",
-  "password-updated": "ok",
 };
 
 const STATUS_MESSAGES: Record<string, string> = {
   deleted: "This account has been deactivated. Contact a team member to restore access.",
   error: "That link was invalid or expired. Try again.",
-  "password-updated": "Password updated. Sign in with your new password.",
 };
 
 export default function LoginForm({
@@ -131,13 +128,6 @@ export default function LoginForm({
             className={styles.input}
           />
         </label>
-
-        <div className={styles.linkRow}>
-          <span />
-          <Link href="/forgot-password" className={styles.link}>
-            Forgot password?
-          </Link>
-        </div>
 
         <button type="submit" disabled={loading} className={styles.button}>
           {loading ? "Signing in..." : "Sign in"}

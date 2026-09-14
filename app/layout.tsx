@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import { Archivo, Fraunces, Space_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
     "Digitizing the handwritten job cards of Lapidary Arts Jewelry — one invoice at a time.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"

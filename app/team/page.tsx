@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/app/navbar";
 import { AddMemberForm } from "./add-member-form";
 import { MemberToggle } from "./member-toggle";
+import { ChangePasswordForm } from "./change-password-form";
 import styles from "./team.module.css";
 
 type Member = {
@@ -58,6 +59,16 @@ export default async function TeamPage() {
             </p>
           </div>
           <AddMemberForm />
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2>Change my password</h2>
+            <p className={styles.sectionHelp}>
+              Replaces the temporary password you were given.
+            </p>
+          </div>
+          <ChangePasswordForm />
         </section>
 
         <section className={styles.section}>
