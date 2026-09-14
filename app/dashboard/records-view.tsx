@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import styles from "./dashboard.module.css";
 
 export type RecordRow = {
@@ -17,11 +18,53 @@ export type RecordRow = {
   updater: { email: string | null } | { email: string | null }[] | null;
 };
 
+type SortKey =
+  | "client_name"
+  | "phone_number"
+  | "date"
+  | "date_promised"
+  | "price"
+  | "status"
+  | "updated_at";
+
+type SortDir = "asc" | "desc";
+
+const STATUS_OPTIONS = ["pending", "approved", "rejected"] as const;
+
+const SORT_LABELS: Record<SortKey, string> = {
+  client_name: "Client",
+  phone_number: "Phone",
+  date: "Date",
+  date_promised: "Date Promised",
+  price: "Price",
+  status: "Status",
+  updated_at: "Updated",
+};
+
 function emailOf(
   ref: RecordRow["creator"],
 ): string | null {
   if (Array.isArray(ref)) return ref[0]?.email ?? null;
   return ref?.email ?? null;
+}
+
+function toNumber(v: string | null | undefined): number | null {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(String(v).replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function sortValue(row: RecordRow, key: SortKey): string | number {
+  switch (key) {
+    case "price":
+      return toNumber(String(row.price ?? "")) ?? Number.NEGATIVE_INFINITY;
+    case "status":
+      return row.status;
+    case "updated_at":
+      return row.updated_at;
+    default:
+      return row[key] ?? "";
+  }
 }
 
 function csvCell(value: string): string {
@@ -62,20 +105,112 @@ const EXPORT_COLUMNS = [
 
 export function RecordsView({ records }: { records: RecordRow[] }) {
   const [query, setQuery] = useState("");
+  const [status, setStatus] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [promisedFrom, setPromisedFrom] = useState("");
+  const [promisedTo, setPromisedTo] = useState("");
+  const [priceMin, setPriceMin] = useState("");
+  const [priceMax, setPriceMax] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey | null>("date");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
+
+  function toggleSort(key: SortKey) {
+    if (sortKey === key) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+  }
+
+  function clearFilters() {
+    setQuery("");
+    setStatus("all");
+    setDateFrom("");
+    setDateTo("");
+    setPromisedFrom("");
+    setPromisedTo("");
+    setPriceMin("");
+    setPriceMax("");
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return records.filter((r) => {
-      if (!q) return true;
-      return (
-        (r.client_name ?? "").toLowerCase().includes(q) ||
-        (r.phone_number ?? "").toLowerCase().includes(q) ||
-        r.status.toLowerCase().includes(q) ||
-        (r.date ?? "").toLowerCase().includes(q) ||
-        (r.date_promised ?? "").toLowerCase().includes(q)
-      );
+    const priceMinN = toNumber(priceMin);
+    const priceMaxN = toNumber(priceMax);
+
+    let rows = records.filter((r) => {
+      if (q) {
+        const haystack = [
+          r.client_name ?? "",
+          r.phone_number ?? "",
+          r.status,
+          r.date ?? "",
+          r.date_promised ?? "",
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!haystack.includes(q)) return false;
+      }
+
+      if (status !== "all" && r.status !== status) return false;
+
+      if (dateFrom && (!r.date || r.date < dateFrom)) return false;
+      if (dateTo && (!r.date || r.date > dateTo)) return false;
+      if (promisedFrom && (!r.date_promised || r.date_promised < promisedFrom))
+        return false;
+      if (promisedTo && (!r.date_promised || r.date_promised > promisedTo))
+        return false;
+
+      const priceN = toNumber(String(r.price ?? ""));
+      if (priceMinN !== null && (priceN === null || priceN < priceMinN))
+        return false;
+      if (priceMaxN !== null && (priceN === null || priceN > priceMaxN))
+        return false;
+
+      return true;
     });
-  }, [records, query]);
+
+    if (sortKey) {
+      const dir = sortDir === "asc" ? 1 : -1;
+      rows = [...rows].sort((a, b) => {
+        const av = sortValue(a, sortKey);
+        const bv = sortValue(b, sortKey);
+        if (typeof av === "number" && typeof bv === "number") {
+          return (av - bv) * dir;
+        }
+        return String(av).localeCompare(String(bv), undefined, {
+          numeric: true,
+          sensitivity: "base",
+        }) * dir;
+      });
+    }
+
+    return rows;
+  }, [
+    records,
+    query,
+    status,
+    dateFrom,
+    dateTo,
+    promisedFrom,
+    promisedTo,
+    priceMin,
+    priceMax,
+    sortKey,
+    sortDir,
+  ]);
+
+  const hasFilters =
+    query !== "" ||
+    status !== "all" ||
+    dateFrom !== "" ||
+    dateTo !== "" ||
+    promisedFrom !== "" ||
+    promisedTo !== "" ||
+    priceMin !== "" ||
+    priceMax !== "";
 
   function handleExport() {
     const body = filtered.map((r) => [
@@ -109,6 +244,19 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
           aria-label="Search records"
           className={styles.search}
         />
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value)}
+          aria-label="Filter by status"
+          className={styles.filterSelect}
+        >
+          <option value="all">All statuses</option>
+          {STATUS_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           onClick={handleExport}
@@ -119,11 +267,74 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
         </button>
       </div>
 
+      <div className={styles.filterGrid}>
+        <label className={styles.filterField}>
+          <span className={styles.filterLabel}>Date from</span>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className={styles.filterInput}
+          />
+        </label>
+        <label className={styles.filterField}>
+          <span className={styles.filterLabel}>Date to</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className={styles.filterInput}
+          />
+        </label>
+        <label className={styles.filterField}>
+          <span className={styles.filterLabel}>Promised from</span>
+          <input
+            type="date"
+            value={promisedFrom}
+            onChange={(e) => setPromisedFrom(e.target.value)}
+            className={styles.filterInput}
+          />
+        </label>
+        <label className={styles.filterField}>
+          <span className={styles.filterLabel}>Promised to</span>
+          <input
+            type="date"
+            value={promisedTo}
+            onChange={(e) => setPromisedTo(e.target.value)}
+            className={styles.filterInput}
+          />
+        </label>
+        <label className={styles.filterField}>
+          <span className={styles.filterLabel}>Price min</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={priceMin}
+            onChange={(e) => setPriceMin(e.target.value)}
+            placeholder="0.00"
+            className={styles.filterInput}
+          />
+        </label>
+        <label className={styles.filterField}>
+          <span className={styles.filterLabel}>Price max</span>
+          <input
+            type="number"
+            min="0"
+            step="0.01"
+            value={priceMax}
+            onChange={(e) => setPriceMax(e.target.value)}
+            placeholder="5000.00"
+            className={styles.filterInput}
+          />
+        </label>
+      </div>
+
       {filtered.length === 0 ? (
         <p className={styles.empty}>
           {records.length === 0
-            ? "No records yet. Once the import pipeline is connected, digitized invoices will appear here with the client, dates, price, and status."
-            : "No records match your search or filter."}
+            ? "No records yet. Add a record to start the ledger."
+            : "No records match your search or filters."}
         </p>
       ) : (
         <div className={styles.tableCard}>
@@ -131,15 +342,35 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Client</th>
-                  <th>Phone</th>
-                  <th>Date</th>
-                  <th>Date Promised</th>
-                  <th className={styles.cellNum}>Price</th>
-                  <th>Status</th>
+                  {(
+                    [
+                      "client_name",
+                      "phone_number",
+                      "date",
+                      "date_promised",
+                      "price",
+                      "status",
+                      "updated_at",
+                    ] as SortKey[]
+                  ).map((key) => (
+                    <th key={key}>
+                      <button
+                        type="button"
+                        onClick={() => toggleSort(key)}
+                        aria-label={`Sort by ${SORT_LABELS[key]}`}
+                        className={styles.sortButton}
+                      >
+                        {SORT_LABELS[key]}
+                        {sortKey === key && (
+                          <span className={styles.sortArrow}>
+                            {sortDir === "asc" ? "▲" : "▼"}
+                          </span>
+                        )}
+                      </button>
+                    </th>
+                  ))}
                   <th>Created by</th>
-                  <th>Updated by</th>
-                  <th>Updated</th>
+                  <th>Edit</th>
                 </tr>
               </thead>
               <tbody>
@@ -173,20 +404,33 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
                         {r.status}
                       </span>
                     </td>
+                    <td className={styles.cellMono}>
+                      {new Date(r.updated_at).toLocaleDateString()}
+                    </td>
                     <td className={styles.cellMuted}>
                       {emailOf(r.creator) ?? "-"}
                     </td>
-                    <td className={styles.cellMuted}>
-                      {emailOf(r.updater) ?? "-"}
-                    </td>
-                    <td className={styles.cellMono}>
-                      {new Date(r.updated_at).toLocaleDateString()}
+                    <td>
+                      <Link
+                        href={`/edit/${r.id}`}
+                        className={styles.editLink}
+                      >
+                        Edit
+                      </Link>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {hasFilters && (
+        <div className={styles.clearRow}>
+          <button type="button" onClick={clearFilters} className={styles.clearFilters}>
+            Clear all filters
+          </button>
         </div>
       )}
     </section>
