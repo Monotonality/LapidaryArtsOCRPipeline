@@ -48,7 +48,7 @@ export default async function TeamPage() {
 
   return (
     <>
-      <Navbar email={user.email ?? ""} />
+      <Navbar email={user.email ?? ""} isAdmin={myProfile?.is_admin === true} />
 
       <main className={styles.main}>
         <div className={styles.pageTitle}>

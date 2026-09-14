@@ -17,7 +17,7 @@ export default async function AddPage() {
 
   const { data: myProfile } = await supabase
     .from("profiles")
-    .select("status")
+    .select("status, is_admin")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -27,7 +27,7 @@ export default async function AddPage() {
 
   return (
     <>
-      <Navbar email={user.email ?? ""} />
+      <Navbar email={user.email ?? ""} isAdmin={myProfile?.is_admin === true} />
 
       <main className={styles.main}>
         <div className={styles.pageTitle}>

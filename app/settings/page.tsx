@@ -18,7 +18,7 @@ export default async function SettingsPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("email, status, created_at")
+    .select("email, status, is_admin, created_at")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -31,7 +31,7 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <Navbar email={user.email ?? ""} />
+      <Navbar email={user.email ?? ""} isAdmin={profile?.is_admin === true} />
 
       <main className={styles.main}>
         <div className={styles.pageTitle}>

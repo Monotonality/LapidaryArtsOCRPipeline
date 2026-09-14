@@ -14,8 +14,9 @@ const items: NavItem[] = [
   { href: "/settings", label: "Settings" },
 ];
 
-export function Navbar({ email }: { email: string }) {
+export function Navbar({ email, isAdmin }: { email: string; isAdmin?: boolean }) {
   const pathname = usePathname();
+  const visibleItems = isAdmin ? items : items.filter((i) => i.href !== "/team");
 
   return (
     <header className={styles.navbar}>
@@ -25,7 +26,7 @@ export function Navbar({ email }: { email: string }) {
         </Link>
 
         <nav className={styles.nav} aria-label="Primary">
-          {items.map((item) => {
+          {visibleItems.map((item) => {
             const active = pathname === item.href;
             return (
               <Link
