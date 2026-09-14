@@ -39,12 +39,35 @@ export default async function DashboardPage() {
   const { data: rows } = await supabase
     .from("records")
     .select(
-      "id, client_name, phone_number, date, date_promised, price, status, created_at, updated_at, creator:profiles!records_created_by_fkey(email), updater:profiles!records_updated_by_fkey(email)",
+      "id, client_name, phone_number, date, date_promised, price, created_at, updated_at, created_by, updated_by",
     )
     .order("created_at", { ascending: false })
     .limit(1000);
 
-  const records = (rows ?? []) as RecordRow[];
+  const userIds = [
+    ...new Set(
+      (rows ?? [])
+        .flatMap((r) => [r.created_by, r.updated_by])
+        .filter((id): id is string => typeof id === "string"),
+    ),
+  ];
+
+  let emails: Record<string, string> = {};
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, email")
+      .in("id", userIds);
+    for (const p of profiles ?? []) {
+      if (p.email) emails[p.id] = p.email;
+    }
+  }
+
+  const records = (rows ?? []).map((r) => ({
+    ...r,
+    creator: r.created_by ? { email: emails[r.created_by] ?? null } : null,
+    updater: r.updated_by ? { email: emails[r.updated_by] ?? null } : null,
+  })) as RecordRow[];
 
   return (
     <>

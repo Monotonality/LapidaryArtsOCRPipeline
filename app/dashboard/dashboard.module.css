@@ -323,27 +323,6 @@
   background: var(--surface-muted);
 }
 
-.statusPillPending {
-  composes: statusPill;
-  background: var(--accent-soft);
-  border-color: var(--accent-border);
-  color: var(--accent);
-}
-
-.statusPillApproved {
-  composes: statusPill;
-  background: var(--success-soft);
-  border-color: var(--success-border);
-  color: var(--success);
-}
-
-.statusPillRejected {
-  composes: statusPill;
-  background: var(--danger-soft);
-  border-color: var(--danger-border);
-  color: var(--danger);
-}
-
 .editLink {
   display: inline-block;
   padding: 0.25rem 0.625rem;

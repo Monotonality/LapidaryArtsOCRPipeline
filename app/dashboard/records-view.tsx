@@ -11,7 +11,6 @@ export type RecordRow = {
   date: string | null;
   date_promised: string | null;
   price: string | number | null;
-  status: string;
   created_at: string;
   updated_at: string;
   creator: { email: string | null } | { email: string | null }[] | null;
@@ -24,12 +23,9 @@ type SortKey =
   | "date"
   | "date_promised"
   | "price"
-  | "status"
   | "updated_at";
 
 type SortDir = "asc" | "desc";
-
-const STATUS_OPTIONS = ["pending", "approved", "rejected"] as const;
 
 const SORT_LABELS: Record<SortKey, string> = {
   client_name: "Client",
@@ -37,7 +33,6 @@ const SORT_LABELS: Record<SortKey, string> = {
   date: "Date",
   date_promised: "Date Promised",
   price: "Price",
-  status: "Status",
   updated_at: "Updated",
 };
 
@@ -58,8 +53,6 @@ function sortValue(row: RecordRow, key: SortKey): string | number {
   switch (key) {
     case "price":
       return toNumber(String(row.price ?? "")) ?? Number.NEGATIVE_INFINITY;
-    case "status":
-      return row.status;
     case "updated_at":
       return row.updated_at;
     default:
@@ -96,7 +89,6 @@ const EXPORT_COLUMNS = [
   "Date",
   "Date promised",
   "Price",
-  "Status",
   "Created",
   "Updated",
   "Created by",
@@ -105,7 +97,6 @@ const EXPORT_COLUMNS = [
 
 export function RecordsView({ records }: { records: RecordRow[] }) {
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [promisedFrom, setPromisedFrom] = useState("");
@@ -126,7 +117,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
 
   function clearFilters() {
     setQuery("");
-    setStatus("all");
     setDateFrom("");
     setDateTo("");
     setPromisedFrom("");
@@ -145,7 +135,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
         const haystack = [
           r.client_name ?? "",
           r.phone_number ?? "",
-          r.status,
           r.date ?? "",
           r.date_promised ?? "",
         ]
@@ -153,8 +142,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
           .toLowerCase();
         if (!haystack.includes(q)) return false;
       }
-
-      if (status !== "all" && r.status !== status) return false;
 
       if (dateFrom && (!r.date || r.date < dateFrom)) return false;
       if (dateTo && (!r.date || r.date > dateTo)) return false;
@@ -191,7 +178,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
   }, [
     records,
     query,
-    status,
     dateFrom,
     dateTo,
     promisedFrom,
@@ -204,7 +190,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
 
   const hasFilters =
     query !== "" ||
-    status !== "all" ||
     dateFrom !== "" ||
     dateTo !== "" ||
     promisedFrom !== "" ||
@@ -219,7 +204,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
       r.date ?? "",
       r.date_promised ?? "",
       r.price != null ? String(r.price) : "",
-      r.status,
       r.created_at ? new Date(r.created_at).toLocaleString() : "",
       r.updated_at ? new Date(r.updated_at).toLocaleString() : "",
       emailOf(r.creator) ?? "",
@@ -240,23 +224,10 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search client, phone, or status"
+          placeholder="Search client, phone, or date"
           aria-label="Search records"
           className={styles.search}
         />
-        <select
-          value={status}
-          onChange={(e) => setStatus(e.target.value)}
-          aria-label="Filter by status"
-          className={styles.filterSelect}
-        >
-          <option value="all">All statuses</option>
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
         <button
           type="button"
           onClick={handleExport}
@@ -349,7 +320,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
                       "date",
                       "date_promised",
                       "price",
-                      "status",
                       "updated_at",
                     ] as SortKey[]
                   ).map((key) => (
@@ -390,19 +360,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
                     </td>
                     <td className={`${styles.cellMono} ${styles.cellNum}`}>
                       {r.price ?? "-"}
-                    </td>
-                    <td>
-                      <span
-                        className={
-                          r.status === "approved"
-                            ? styles.statusPillApproved
-                            : r.status === "rejected"
-                              ? styles.statusPillRejected
-                              : styles.statusPillPending
-                        }
-                      >
-                        {r.status}
-                      </span>
                     </td>
                     <td className={styles.cellMono}>
                       {new Date(r.updated_at).toLocaleDateString()}
