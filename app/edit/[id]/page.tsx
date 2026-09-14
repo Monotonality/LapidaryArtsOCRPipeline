@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/app/navbar";
 import { EditRecordForm } from "../edit-form";
-import styles from "./edit.module.css";
+import styles from "../edit.module.css";
 
 export default async function EditRecordPage({
   params,
