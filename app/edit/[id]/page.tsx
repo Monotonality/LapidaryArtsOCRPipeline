@@ -27,18 +27,8 @@ export default async function EditRecordPage({
     .eq("id", user.id)
     .maybeSingle();
 
-  const { count: approvedCount } = await supabase
-    .from("profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "approved");
-
-  const isApproved =
-    approvedCount && approvedCount > 0
-      ? myProfile?.status === "approved"
-      : true;
-
-  if (!isApproved) {
-    redirect("/login?status=pending");
+  if (myProfile?.status === "deleted") {
+    redirect("/login?status=deleted");
   }
 
   const { data: record } = await supabase

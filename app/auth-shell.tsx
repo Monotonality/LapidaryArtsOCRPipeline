@@ -31,9 +31,9 @@ export function AuthShell({
           </div>
 
           <p className={styles.panelFooter}>
-            New signups stay hidden until an existing member
+            Accounts are created by a team member —
             <br />
-            approves them.
+            so everyone on the ledger is known.
           </p>
         </aside>
 

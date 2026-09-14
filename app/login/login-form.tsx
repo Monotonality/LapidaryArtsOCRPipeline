@@ -8,15 +8,13 @@ import { AuthShell } from "@/app/auth-shell";
 import styles from "@/app/auth.module.css";
 
 const STATUS_KINDS: Record<string, "ok" | "bad"> = {
-  pending: "ok",
-  rejected: "bad",
+  deleted: "bad",
   error: "bad",
   "password-updated": "ok",
 };
 
 const STATUS_MESSAGES: Record<string, string> = {
-  pending: "Your account is pending approval by an existing team member.",
-  rejected: "Your account was not approved. Contact a team member.",
+  deleted: "This account has been deactivated. Contact a team member to restore access.",
   error: "That link was invalid or expired. Try again.",
   "password-updated": "Password updated. Sign in with your new password.",
 };
@@ -62,23 +60,11 @@ export default function LoginForm({
       .eq("id", user.id)
       .maybeSingle();
 
-    const { count: approvedCount } = await supabase
-      .from("profiles")
-      .select("id", { count: "exact", head: true })
-      .eq("status", "approved");
-
-    const isApproved =
-      approvedCount && approvedCount > 0
-        ? profile?.status === "approved"
-        : true;
-
-    if (!isApproved) {
+    if (profile?.status === "deleted") {
       await supabase.auth.signOut();
       setLoading(false);
       setError(
-        profile?.status === "deleted"
-          ? "This account has been deactivated. Contact a team member to restore access."
-          : "Your account is pending approval by an existing team member.",
+        "This account has been deactivated. Contact a team member to restore access.",
       );
       return;
     }
@@ -157,13 +143,6 @@ export default function LoginForm({
           {loading ? "Signing in..." : "Sign in"}
         </button>
       </form>
-
-      <p className={styles.footer}>
-        No account?{" "}
-        <Link href="/signup" className={styles.link}>
-          Create one
-        </Link>
-      </p>
     </AuthShell>
   );
 }

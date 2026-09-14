@@ -21,19 +21,8 @@ export default async function DashboardPage() {
     .eq("id", user.id)
     .maybeSingle();
 
-  const { count: approvedCount } = await supabase
-    .from("profiles")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "approved");
-
-  // Bootstrap: until the first approval exists, the first signups are admitted.
-  const isApproved =
-    approvedCount && approvedCount > 0
-      ? myProfile?.status === "approved"
-      : true;
-
-  if (!isApproved) {
-    redirect("/login?status=pending");
+  if (myProfile?.status === "deleted") {
+    redirect("/login?status=deleted");
   }
 
   const { data: rows } = await supabase
