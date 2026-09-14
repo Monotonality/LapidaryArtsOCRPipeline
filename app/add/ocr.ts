@@ -1,29 +1,98 @@
+type Transcriber = (image: unknown, options: object) => Promise<OcrResult>;
 type OcrResult = Array<{ generated_text: string }>;
 
-let transcriber: ((image: unknown, options: object) => Promise<OcrResult>) | null =
-  null;
+export type OcrModelKind = "handwritten" | "printed";
+
+export type OcrModelProgress = {
+  file: string;
+  loaded: number;
+  total: number;
+  progress: number;
+};
+
+export type OcrProgressHandler = (p: OcrModelProgress) => void;
 
 const MODELS = {
   handwritten: "Xenova/trocr-small-handwritten",
   printed: "Xenova/trocr-small-printed",
 } as const;
 
-export async function runOcr(
-  image: HTMLCanvasElement,
-  kind: "handwritten" | "printed",
-): Promise<string> {
-  const { pipeline, env } = await import("@huggingface/transformers");
-  env.allowLocalModels = false;
+let transcriberPromise: Promise<Transcriber> | null = null;
+let transcriberKind: OcrModelKind | null = null;
 
-  if (!transcriber) {
-    transcriber = (await pipeline(
-      "image-to-text",
-      MODELS[kind],
-    )) as (image: unknown, options: object) => Promise<OcrResult>;
+function loadTranscriber(
+  kind: OcrModelKind,
+  onProgress?: OcrProgressHandler,
+): Promise<Transcriber> {
+  if (transcriberPromise && transcriberKind === kind) {
+    return transcriberPromise;
   }
 
-  const output = await transcriber(image, { max_new_tokens: 256 });
-  return output[0]?.generated_text ?? "";
+  transcriberKind = kind;
+  transcriberPromise = (async () => {
+    const { pipeline, env } = await import("@huggingface/transformers");
+    env.allowLocalModels = false;
+
+    return (await pipeline("image-to-text", MODELS[kind], {
+      // q8 keeps the download to ~64MB and runs far faster than the fp32
+      // default (the full fp32 folder is 826MB).
+      dtype: "q8",
+      progress_callback: (update: {
+        status?: string;
+        file?: string;
+        loaded?: number;
+        total?: number;
+        progress?: number;
+      }) => {
+        if (
+          !onProgress ||
+          update.status !== "progress" ||
+          update.loaded === undefined ||
+          update.total === undefined
+        ) {
+          return;
+        }
+        onProgress({
+          file: update.file ?? "",
+          loaded: update.loaded,
+          total: update.total,
+          progress:
+            update.progress ??
+            (update.total > 0 ? update.loaded / update.total : 0),
+        });
+      },
+    })) as Transcriber;
+  })();
+
+  return transcriberPromise;
+}
+
+export function preloadOcrModel(
+  kind: OcrModelKind,
+  onProgress?: OcrProgressHandler,
+): Promise<void> {
+  const promise = loadTranscriber(kind, onProgress);
+  promise.catch(() => {
+    // Surface load failures on the button click, not silently here.
+  });
+  return promise.then(() => undefined);
+}
+
+export async function runOcr(
+  image: HTMLCanvasElement,
+  kind: OcrModelKind,
+  onProgress?: OcrProgressHandler,
+): Promise<string> {
+  try {
+    const transcriber = await loadTranscriber(kind, onProgress);
+    const output = await transcriber(image, { max_new_tokens: 256 });
+    return output[0]?.generated_text ?? "";
+  } catch (err) {
+    // A failed (or timed-out) load should not poison the cached promise.
+    transcriberPromise = null;
+    transcriberKind = null;
+    throw err;
+  }
 }
 
 function pad(n: string): string {

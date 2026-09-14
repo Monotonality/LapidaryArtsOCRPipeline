@@ -2,11 +2,17 @@
 
 import { useActionState, useRef, useState } from "react";
 import { createRecord } from "./actions";
-import { runOcr, parseOcrText } from "./ocr";
+import {
+  runOcr,
+  parseOcrText,
+  preloadOcrModel,
+  type OcrModelKind,
+  type OcrProgressHandler,
+} from "./ocr";
 import styles from "./add.module.css";
 
 type Mode = "form" | "photo";
-type OcrState = "idle" | "loading" | "done" | "error";
+type OcrState = "idle" | "model" | "reading" | "done" | "error";
 
 type RecordFields = {
   client_name: string;
@@ -33,11 +39,17 @@ export function AddRecord() {
   const [state, formAction, saving] = useActionState(createRecord, {});
 
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [model, setModel] = useState<"handwritten" | "printed">("handwritten");
+  const [model, setModel] = useState<OcrModelKind>("handwritten");
   const [ocrState, setOcrState] = useState<OcrState>("idle");
   const [ocrText, setOcrText] = useState("");
   const [ocrNote, setOcrNote] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+  const readStartedRef = useRef(false);
+
+  const handleModelProgress: OcrProgressHandler = ({ file, loaded, total }) => {
+    const pct = Math.round((loaded / total) * 100);
+    setOcrNote(`Downloading ${file} — ${pct}% (one-time)`);
+  };
 
   function set<K extends keyof RecordFields>(key: K, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -49,6 +61,7 @@ export function AddRecord() {
     setOcrState("idle");
     setOcrText("");
     setOcrNote("");
+    readStartedRef.current = false;
     if (fileRef.current) fileRef.current.value = "";
   }
 
@@ -58,15 +71,35 @@ export function AddRecord() {
     setOcrState("idle");
     setOcrText("");
     setOcrNote("");
+    readStartedRef.current = false;
     const url = URL.createObjectURL(file);
     if (imageUrl) URL.revokeObjectURL(imageUrl);
     setImageUrl(url);
+
+    preloadOcrModel(model, handleModelProgress)
+      .then(() => {
+        if (!readStartedRef.current) {
+          setOcrNote("Reader ready — press Read card.");
+          setOcrState("idle");
+        }
+      })
+      .catch(() => {
+        if (!readStartedRef.current) {
+          setOcrState("idle");
+          setOcrNote("");
+        }
+      });
   }
 
   async function handleOcr() {
     if (!imageUrl) return;
-    setOcrState("loading");
-    setOcrNote("Model loads on first read — a one-time download.");
+    readStartedRef.current = true;
+    setOcrState("reading");
+    setOcrNote(
+      model === "handwritten"
+        ? "Reading the card…"
+        : "Reading the card… (printed)",
+    );
     try {
       const img = document.createElement("img");
       img.src = imageUrl;
@@ -84,8 +117,7 @@ export function AddRecord() {
       if (!ctx) throw new Error("canvas context unavailable");
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-      setOcrNote("Reading the card…");
-      const text = await runOcr(canvas, model);
+      const text = await runOcr(canvas, model, handleModelProgress);
 
       if (!text.trim()) {
         setOcrState("error");
@@ -170,9 +202,9 @@ export function AddRecord() {
                   <select
                     value={model}
                     onChange={(e) =>
-                      setModel(e.target.value as "handwritten" | "printed")
+                      setModel(e.target.value as OcrModelKind)
                     }
-                    disabled={ocrState === "loading"}
+                    disabled={ocrState === "reading" || ocrState === "model"}
                     className={styles.select}
                   >
                     <option value="handwritten">Handwritten</option>
@@ -182,10 +214,14 @@ export function AddRecord() {
                 <button
                   type="button"
                   onClick={handleOcr}
-                  disabled={ocrState === "loading"}
+                  disabled={ocrState === "reading" || ocrState === "model"}
                   className={styles.ocrButton}
                 >
-                  {ocrState === "loading" ? "Reading…" : "Read card"}
+                  {ocrState === "reading"
+                    ? "Reading…"
+                    : ocrState === "model"
+                      ? "Preparing…"
+                      : "Read card"}
                 </button>
                 <button
                   type="button"
@@ -194,6 +230,7 @@ export function AddRecord() {
                     setOcrState("idle");
                     setOcrText("");
                     setOcrNote("");
+                    readStartedRef.current = false;
                     if (fileRef.current) fileRef.current.value = "";
                   }}
                   className={styles.chooseAgain}
