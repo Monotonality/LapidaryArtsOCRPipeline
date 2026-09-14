@@ -14,7 +14,7 @@ export function TransferAdminForm({ members }: { members: MemberRef[] }) {
   const [selected, setSelected] = useState("");
   const [confirmEmail, setConfirmEmail] = useState("");
 
-  if (members.length <= 1) {
+  if (members.length === 0) {
     return (
       <p className={styles.empty}>
         Add another member before you can transfer the admin role.
