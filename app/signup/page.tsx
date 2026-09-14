@@ -23,7 +23,7 @@ export default function SignupPage() {
     setMessage(null);
     setLoading(true);
 
-    const { data, error } = await supabase.auth.signUp({
+    const { error } = await supabase.auth.signUp({
       email,
       password,
     });
@@ -32,13 +32,6 @@ export default function SignupPage() {
 
     if (error) {
       setError(error.message);
-      return;
-    }
-
-    if (!data.session) {
-      setMessage(
-        "Account created. Confirm your email, then an existing team member must approve your account before you can sign in.",
-      );
       return;
     }
 
