@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/app/navbar";
 import { AddMemberForm } from "./add-member-form";
 import { MemberToggle } from "./member-toggle";
+import { ResetMemberPassword } from "./reset-member-password";
 import { ChangePasswordForm } from "./change-password-form";
 import styles from "./team.module.css";
 
@@ -101,10 +102,15 @@ export default async function TeamPage() {
                         Joined {new Date(m.created_at).toLocaleDateString()}
                       </p>
                     </div>
-                    {
-                      !isSelf &&
-                        <MemberToggle userId={m.id} isDeleted={isDeleted} />
-                    }
+                    <div className={styles.itemActions}>
+                      {
+                        !isSelf &&
+                          <>
+                            <MemberToggle userId={m.id} isDeleted={isDeleted} />
+                            <ResetMemberPassword userId={m.id} email={m.email} />
+                          </>
+                      }
+                    </div>
                   </li>
                 );
               })}

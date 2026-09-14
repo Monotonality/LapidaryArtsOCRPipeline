@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 
-export type MemberStatusState = { error?: string };
+export type MemberStatusState = { error?: string; success?: string };
 
 export async function addMember(
   prev: MemberStatusState | undefined,
@@ -76,4 +76,38 @@ export async function setMemberStatus(
 
   revalidatePath("/team");
   return {};
+}
+
+export async function resetMemberPassword(
+  userId: string,
+  email: string,
+  prev: MemberStatusState | undefined,
+  formData: FormData,
+): Promise<MemberStatusState> {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  if (password.length < 6) {
+    return { error: "Password must be at least 6 characters." };
+  }
+
+  if (password !== confirm) {
+    return { error: "Passwords do not match." };
+  }
+
+  const admin = createAdmin();
+
+  const { error } = await admin.auth.admin.updateUserById(userId, {
+    password,
+  });
+
+  if (error) {
+    console.error("Failed to reset member password", error);
+    return { error: "We couldn't reset that password. Please try again." };
+  }
+
+  revalidatePath("/team");
+  return {
+    success: `New temporary password set for ${email}. Share it out of band.`,
+  };
 }
