@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { AuthShell } from "@/app/auth-shell";
 import styles from "@/app/auth.module.css";
 
 export default function ForgotPasswordPage() {
@@ -36,39 +37,46 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className={styles.auth}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Reset your password</h1>
-        <p className={styles.subtitle}>
-          We'll email you a link to set a new password.
-        </p>
+    <AuthShell
+      eyebrow="Password"
+      title="Reset your password"
+      subtitle="We&apos;ll email you a link to set a new password."
+    >
+      {error && (
+        <div role="alert" className={styles.alertError}>
+          {error}
+        </div>
+      )}
+      {message && (
+        <div role="status" className={styles.alertSuccess}>
+          {message}
+        </div>
+      )}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <label className={styles.label}>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className={styles.input}
-            />
-          </label>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <label className={styles.label}>
+          Email
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+            placeholder="you@example.com"
+            className={styles.input}
+          />
+        </label>
 
-          {error && <p className={styles.error}>{error}</p>}
-          {message && <p className={styles.message}>{message}</p>}
+        <button type="submit" disabled={loading} className={styles.button}>
+          {loading ? "Sending..." : "Send reset link"}
+        </button>
+      </form>
 
-          <button type="submit" disabled={loading} className={styles.button}>
-            {loading ? "Sending..." : "Send reset link"}
-          </button>
-        </form>
-
-        <p className={styles.footer}>
-          <Link href="/login" className={styles.link}>
-            Back to sign in
-          </Link>
-        </p>
-      </div>
-    </main>
+      <p className={styles.footer}>
+        <Link href="/login" className={styles.link}>
+          Back to sign in
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

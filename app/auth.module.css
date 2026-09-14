@@ -1,87 +1,447 @@
+/* Lapidary Arts Records — auth screens.
+   Tokens from app/globals.css (see docs/style-guide.md).
+
+   The auth pages are a two-panel "ledger" composition: a dark claret
+   brand panel beside the form card. Deliberately asymmetric — the default
+   AI look is one centered card on an empty page. */
+
 .auth {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   min-height: 100dvh;
-  padding: 1.5rem;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5);
 }
 
-.card {
+.stage {
   width: 100%;
-  max-width: 24rem;
-  padding: 2rem;
-  border: 1px solid var(--foreground);
-  border-radius: 0.5rem;
+  max-width: 58rem;
+  min-height: 32rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(21rem, 1fr);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: rise 460ms var(--ease) both;
+}
+
+/* ============================================================
+   Brand panel (left)
+   ============================================================ */
+
+.panel {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-8);
+  color: var(--claret-50);
+  background: linear-gradient(160deg, var(--claret-800) 0%, var(--claret-950) 100%);
+  overflow: hidden;
+}
+
+/* paper grain on the deep claret */
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: var(--noise);
+  background-size: 160px 160px;
+  opacity: 0.09;
+  pointer-events: none;
+}
+
+/* diamond "gem facet" lattice, cut across the corner */
+.panel::after {
+  content: "";
+  position: absolute;
+  top: -32%;
+  right: -22%;
+  width: 34rem;
+  height: 34rem;
+  background-image:
+    repeating-linear-gradient(45deg, transparent 0 26px, rgba(252, 241, 243, 0.07) 26px 27px),
+    repeating-linear-gradient(-45deg, transparent 0 26px, rgba(252, 241, 243, 0.07) 26px 27px);
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+
+.panelHead,
+.panelBody,
+.panelFooter {
+  position: relative;
+  z-index: 1;
+}
+
+.panelHead {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.panelGem {
+  width: 2.75rem;
+  height: 2.75rem;
+  transform: rotate(45deg);
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #d44763, var(--claret-700));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 246, 247, 0.28),
+    var(--shadow-xs);
+  display: grid;
+  place-items: center;
+}
+
+.panelGem::after {
+  content: "";
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  background: rgba(255, 246, 247, 0.92);
+}
+
+.panelName {
+  font-family: var(--font-display);
+  font-size: 1.625rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  color: var(--claret-50);
+}
+
+.panelName em {
+  font-style: italic;
+  font-weight: 480;
+  color: #e89aac;
+}
+
+.panelBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.panelEyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(252, 241, 243, 0.72);
+}
+
+.panelCopy {
+  font-family: var(--font-display);
+  font-size: 1.5625rem;
+  font-weight: 450;
+  line-height: 1.22;
+  max-width: 18ch;
+}
+
+.panelFooter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  border-top: 1px solid rgba(252, 241, 243, 0.18);
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  color: rgba(252, 241, 243, 0.78);
+}
+
+/* ============================================================
+   Form card (right)
+   ============================================================ */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: calc(var(--space-8) + var(--space-1)) var(--space-8);
+  background: var(--surface);
+  position: relative;
+  animation: rise 460ms var(--ease) 90ms both;
+}
+
+/* thin claret rule across the top of the card (flat — no gradient) */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--accent);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  user-select: none;
+}
+
+.gem {
+  width: 1.5rem;
+  height: 1.5rem;
+  transform: rotate(45deg);
+  border-radius: 0.25rem;
+  background: linear-gradient(135deg, var(--accent), var(--claret-800));
+  box-shadow: 0 0 0 1px var(--border-strong) inset, var(--shadow-xs);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.gem::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--on-accent);
+  opacity: 0.9;
+}
+
+.brandName {
+  font-family: var(--font-display);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.brandName em {
+  font-style: italic;
+  font-weight: 480;
+  color: var(--accent);
+}
+
+.brandTagline {
+  font-size: 0.75rem;
+  color: var(--text-faint);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 
 .title {
   font-size: 1.375rem;
   font-weight: 600;
+  color: var(--text);
 }
 
 .subtitle {
-  color: var(--foreground);
-  opacity: 0.7;
+  color: var(--text-muted);
   font-size: 0.875rem;
+  line-height: 1.5;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 0.875rem;
+  gap: var(--space-5);
+  margin-top: var(--space-1);
 }
 
 .label {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  font-size: 0.875rem;
+  gap: var(--space-2);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
 }
 
 .input {
-  padding: 0.5rem 0.625rem;
-  border: 1px solid var(--foreground);
-  border-radius: 0.375rem;
-  background: var(--background);
-  color: var(--foreground);
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
   font-size: 0.9375rem;
+  line-height: 1.5;
+  transition:
+    border-color 150ms var(--ease),
+    box-shadow 150ms var(--ease);
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.input:hover {
+  border-color: var(--border-strong);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 .button {
-  margin-top: 0.25rem;
-  padding: 0.625rem;
+  margin-top: var(--space-2);
+  padding: var(--space-3) var(--space-4);
   border: none;
-  border-radius: 0.375rem;
-  background: var(--foreground);
-  color: var(--background);
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: var(--on-accent);
   font-weight: 600;
   font-size: 0.9375rem;
+  line-height: 1.5;
   cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  transition:
+    background 150ms var(--ease),
+    transform 75ms var(--ease),
+    box-shadow 150ms var(--ease);
+}
+
+.button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.button:active:not(:disabled) {
+  transform: translateY(1px);
+  background: var(--accent-press);
 }
 
 .button:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: default;
 }
 
-.error {
-  color: #b91c1c;
-  font-size: 0.8125rem;
+.link {
+  color: var(--accent);
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition: color 150ms var(--ease);
 }
 
-.message {
-  color: #15803d;
+.link:hover {
+  color: var(--accent-hover);
+}
+
+.linkRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  margin-top: var(--space-1);
+}
+
+/* ---- Alerts ---- */
+.alert {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
   font-size: 0.8125rem;
+  line-height: 1.45;
+}
+
+.alert::before {
+  content: "✦";
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.alertError {
+  composes: alert;
+  background: var(--danger-soft);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.alertError::before {
+  content: "✕";
+}
+
+.alertSuccess {
+  composes: alert;
+  background: var(--success-soft);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+
+.alertSuccess::before {
+  content: "✓";
 }
 
 .footer {
   font-size: 0.875rem;
-  opacity: 0.8;
+  color: var(--text-muted);
+  text-align: center;
 }
 
-.link {
-  text-decoration: underline;
+.footer .link {
+  font-weight: 500;
+}
+
+/* ============================================================
+   Narrow screens: stack the panel as a slim brand bar
+   ============================================================ */
+
+@media (max-width: 760px) {
+  .auth {
+    padding: var(--space-3);
+  }
+
+  .stage {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+
+  .panel {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-5);
+  }
+
+  .panelHead {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .panelGem {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+
+  .panelName {
+    font-size: 1.0625rem;
+  }
+
+  .panelBody,
+  .panelFooter {
+    display: none;
+  }
+
+  .card {
+    padding: var(--space-6) var(--space-5);
+  }
 }

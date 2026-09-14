@@ -1,17 +1,147 @@
+/* ============================================================
+   Lapidary Arts Records — Design tokens
+   The single source of truth for color, type, spacing, and
+   elevation. Full reference: docs/style-guide.md
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* ---- Brand palette: "Claret" (dark red, jewelry-wax inspired) ---- */
+  --claret-50: #fcf1f3;
+  --claret-100: #f9e2e7;
+  --claret-200: #f0c7cf;
+  --claret-300: #e39dab;
+  --claret-400: #d06d82;
+  --claret-500: #b9425f;
+  --claret-600: #a02c4a;
+  --claret-700: #8c1d33; /* brand anchor */
+  --claret-800: #741828;
+  --claret-900: #5c1220;
+  --claret-950: #3c0a13;
+
+  /* ---- Neutral scale: warm ink (flesh-tinted to stay cozy) ---- */
+  --ink-50: #faf7f6;
+  --ink-100: #f3eeec;
+  --ink-200: #e7dddc;
+  --ink-300: #d3c7c5;
+  --ink-400: #b8a6a4;
+  --ink-500: #92807f;
+  --ink-600: #6e5f63;
+  --ink-700: #4f4145;
+  --ink-800: #382d30;
+  --ink-900: #261a1d;
+  --ink-950: #170e11;
+
+  /* ---- Feedback ---- */
+  --green-600: #2e7d32;
+  --green-700: #256b2a;
+  --red-600: #b3261e;
+
+  /* ================= Semantic tokens (light) ================= */
+  --bg: var(--ink-50);
+  --surface: #ffffff;
+  --surface-muted: var(--ink-100);
+  --text: var(--ink-900);
+  --text-muted: var(--ink-600);
+  --text-faint: var(--ink-500);
+  --border: var(--ink-200);
+  --border-strong: var(--ink-300);
+
+  --accent: var(--claret-700);
+  --accent-hover: #a1253f;
+  --accent-press: var(--claret-900);
+  --accent-soft: var(--claret-100);
+  --accent-border: var(--claret-200);
+  --on-accent: #fff6f7;
+  --ring: rgba(140, 29, 51, 0.18);
+
+  --success: var(--green-700);
+  --success-soft: #eaf5eb;
+  --success-border: #c5e3c8;
+  --danger: var(--red-600);
+  --danger-soft: #fdeceb;
+  --danger-border: #f0c8c4;
+
+  /* ---- Structure ---- */
+  --radius-sm: 0.375rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 1rem;
+  --radius-pill: 999px;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* ---- Elevation ---- */
+  --shadow-xs: 0 1px 2px rgba(59, 16, 24, 0.05);
+  --shadow-sm: 0 1px 3px rgba(59, 16, 24, 0.08), 0 1px 2px rgba(59, 16, 24, 0.04);
+  --shadow-md: 0 4px 12px rgba(59, 16, 24, 0.1), 0 1px 3px rgba(59, 16, 24, 0.06);
+  --shadow-lg: 0 12px 32px rgba(59, 16, 24, 0.14), 0 3px 8px rgba(59, 16, 24, 0.06);
+
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  /* ---- Type ----
+     Deliberately not a default-alike stack (no Inter/Geist/Roboto):
+     Fraunces for display, Archivo for UI, Space Mono for data. */
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* ---- Paper grain (subtle SVG turbulence, overlay blend) ---- */
+  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: var(--ink-950);
+    --surface: #1e1519;
+    --surface-muted: #261b20;
+    --text: #f2e8ea;
+    --text-muted: #b5a2a7;
+    --text-faint: #8a767c;
+    --border: #3b2a30;
+    --border-strong: #503a42;
+
+    --accent: #d44763;
+    --accent-hover: #dd5b74;
+    --accent-press: #b9324e;
+    --accent-soft: #3a1f28;
+    --accent-border: #6a3040;
+    --on-accent: #fff4f6;
+    --ring: rgba(212, 71, 99, 0.35);
+
+    --success: #7fd18d;
+    --success-soft: #1d3321;
+    --success-border: #3a5a40;
+    --danger: #f0716b;
+    --danger-soft: #3a2021;
+    --danger-border: #68302f;
+
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 3px 8px rgba(0, 0, 0, 0.4);
   }
 }
 
+/* ============================================================
+   Base
+   ============================================================ */
+
 html {
   height: 100%;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  html {
+    color-scheme: dark;
+  }
 }
 
 html,
@@ -24,11 +154,27 @@ body {
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  font-optical-sizing: auto;
+  color: var(--text);
+  background: var(--bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* faint paper grain over the whole canvas — most "flat AI" pages lack texture */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image: var(--noise);
+  background-size: 160px 160px;
+  opacity: 0.028;
+  mix-blend-mode: overlay;
 }
 
 * {
@@ -37,13 +183,75 @@ body {
   margin: 0;
 }
 
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
 a {
   color: inherit;
   text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Display type: the serif is reserved for headings and the brand wordmark,
+   keeping body copy in the UI sans. */
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  text-wrap: balance;
+}
+
+code,
+kbd,
+samp {
+  font-family: var(--font-mono);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* ---- Entrance motion (transform/opacity only, out-of-the-box reduced) ---- */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

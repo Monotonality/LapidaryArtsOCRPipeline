@@ -4,7 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { AuthShell } from "@/app/auth-shell";
 import styles from "@/app/auth.module.css";
+
+const STATUS_KINDS: Record<string, "ok" | "bad"> = {
+  pending: "ok",
+  rejected: "bad",
+  error: "bad",
+  "password-updated": "ok",
+};
 
 const STATUS_MESSAGES: Record<string, string> = {
   pending: "Your account is pending approval by an existing team member.",
@@ -60,7 +68,9 @@ export default function LoginForm({ status }: { status?: string }) {
       await supabase.auth.signOut();
       setLoading(false);
       setError(
-        "Your account is pending approval by an existing team member.",
+        profile?.status === "deleted"
+          ? "This account has been deactivated. Contact a team member to restore access."
+          : "Your account is pending approval by an existing team member.",
       );
       return;
     }
@@ -70,56 +80,74 @@ export default function LoginForm({ status }: { status?: string }) {
     router.refresh();
   }
 
+  const statusKind = status ? (STATUS_KINDS[status] ?? "bad") : null;
+
   return (
-    <main className={styles.auth}>
-      <div className={styles.card}>
-        <h1 className={styles.title}>Lapidary Arts Records</h1>
-        <p className={styles.subtitle}>Sign in to access the dashboard.</p>
+    <AuthShell
+      eyebrow="Sign in"
+      title="Open the ledger"
+      subtitle="Use your Lapidary Arts login to reach the shared records."
+    >
+      {statusKind && STATUS_MESSAGES[status!] && (
+        <div
+          role="alert"
+          className={
+            statusKind === "ok" ? styles.alertSuccess : styles.alertError
+          }
+        >
+          {STATUS_MESSAGES[status!]}
+        </div>
+      )}
+      {error && (
+        <div role="alert" className={styles.alertError}>
+          {error}
+        </div>
+      )}
 
-        <form onSubmit={handleSubmit} className={styles.form}>
-          <label className={styles.label}>
-            Email
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className={styles.input}
-            />
-          </label>
+      <form onSubmit={handleSubmit} className={styles.form}>
+        <label className={styles.label}>
+          Email
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoComplete="email"
+            placeholder="you@example.com"
+            className={styles.input}
+          />
+        </label>
 
-          <label className={styles.label}>
-            Password
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className={styles.input}
-            />
-          </label>
+        <label className={styles.label}>
+          Password
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            autoComplete="current-password"
+            className={styles.input}
+          />
+        </label>
 
+        <div className={styles.linkRow}>
+          <span />
           <Link href="/forgot-password" className={styles.link}>
             Forgot password?
           </Link>
+        </div>
 
-          {status && STATUS_MESSAGES[status] && (
-            <p className={styles.message}>{STATUS_MESSAGES[status]}</p>
-          )}
-          {error && <p className={styles.error}>{error}</p>}
+        <button type="submit" disabled={loading} className={styles.button}>
+          {loading ? "Signing in..." : "Sign in"}
+        </button>
+      </form>
 
-          <button type="submit" disabled={loading} className={styles.button}>
-            {loading ? "Signing in..." : "Sign in"}
-          </button>
-        </form>
-
-        <p className={styles.footer}>
-          No account?{" "}
-          <Link href="/signup" className={styles.link}>
-            Create one
-          </Link>
-        </p>
-      </div>
-    </main>
+      <p className={styles.footer}>
+        No account?{" "}
+        <Link href="/signup" className={styles.link}>
+          Create one
+        </Link>
+      </p>
+    </AuthShell>
   );
 }

@@ -3,3 +3,7 @@
 /.next
 /out
  /.vercel
+.vercel
+.env*
+*.log
+*.tsbuildinfo

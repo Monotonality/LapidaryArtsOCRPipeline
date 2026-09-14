@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { Brand } from "@/app/brand";
 import { setSignupStatus } from "./actions";
+import styles from "./dashboard.module.css";
 
 type ProfileRef =
   | { email: string | null }
@@ -83,85 +85,56 @@ export default async function DashboardPage() {
   const pending = (pendingQuery ?? []) as PendingProfile[];
 
   return (
-    <main style={{ padding: "2rem", maxWidth: "64rem", margin: "0 auto" }}>
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <div>
-          <h1 style={{ fontSize: "1.5rem", fontWeight: 600 }}>Dashboard</h1>
-          <p style={{ opacity: 0.7, fontSize: "0.875rem" }}>
-            Signed in as {user.email}
-          </p>
+    <main className={styles.main}>
+      <header className={styles.masthead}>
+        <Brand />
+        <div className={styles.session}>
+          <span className={styles.userEmail}>{user.email}</span>
+          <Link href="/settings" className={styles.settings}>
+            Settings
+          </Link>
+          <form action="/auth/signout" method="post">
+            <button type="submit" className={styles.signOut}>
+              Sign out
+            </button>
+          </form>
         </div>
-        <form action="/auth/signout" method="post">
-          <button
-            type="submit"
-            style={{
-              padding: "0.5rem 0.875rem",
-              border: "1px solid var(--foreground)",
-              background: "transparent",
-              color: "var(--foreground)",
-              borderRadius: "0.375rem",
-              cursor: "pointer",
-              fontSize: "0.875rem",
-            }}
-          >
-            Sign out
-          </button>
-        </form>
       </header>
 
-      <section style={{ marginBottom: "2rem" }}>
-        <h2 style={{ fontSize: "1.125rem", fontWeight: 600, marginBottom: "0.75rem" }}>
-          Pending signups{" "}
+      <div className={styles.pageTitle}>
+        <h1>Records ledger</h1>
+      </div>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHead}>
+          <h2>Pending signups</h2>
           {pending.length > 0 && (
-            <span style={{ opacity: 0.6, fontWeight: 400 }}>
-              ({pending.length})
-            </span>
+            <span className={styles.count}>{pending.length}</span>
           )}
-        </h2>
+        </div>
 
         {pending.length === 0 ? (
-          <p style={{ opacity: 0.7, fontSize: "0.9375rem" }}>
-            No signups waiting for approval.
+          <p className={styles.empty}>
+            No new accounts waiting on a decision.
           </p>
         ) : (
-          <ul style={{ listStyle: "none", padding: 0, display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+          <ul className={styles.list}>
             {pending.map((p) => (
-              <li
-                key={p.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  gap: "1rem",
-                  padding: "0.625rem 0.875rem",
-                  border: "1px solid var(--foreground)",
-                  borderRadius: "0.375rem",
-                }}
-              >
-                <div>
-                  <p style={{ fontWeight: 500 }}>{p.email}</p>
-                  <p style={{ opacity: 0.6, fontSize: "0.8125rem" }}>
+              <li key={p.id} className={styles.item}>
+                <div className={styles.itemBody}>
+                  <p className={styles.itemTitle}>{p.email}</p>
+                  <p className={styles.itemMeta}>
                     Requested {new Date(p.created_at).toLocaleString()}
                   </p>
                 </div>
-                <div style={{ display: "flex", gap: "0.5rem" }}>
+                <div className={styles.itemActions}>
                   <form action={setSignupStatus.bind(null, p.id, "approved")}>
-                    <button
-                      type="submit"
-                      style={approveButtonStyle}
-                    >
+                    <button type="submit" className={styles.approve}>
                       Approve
                     </button>
                   </form>
                   <form action={setSignupStatus.bind(null, p.id, "rejected")}>
-                    <button type="submit" style={rejectButtonStyle}>
+                    <button type="submit" className={styles.reject}>
                       Reject
                     </button>
                   </form>
@@ -172,105 +145,73 @@ export default async function DashboardPage() {
         )}
       </section>
 
-      <section>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "0.75rem",
-          }}
-        >
-          <h2 style={{ fontSize: "1.125rem", fontWeight: 600 }}>Records</h2>
-          <Link
-            href="#"
-            style={{
-              fontSize: "0.875rem",
-              textDecoration: "underline",
-              opacity: 0.8,
-            }}
-          >
-            Search / filter (next)
+      <section className={styles.section}>
+        <div className={styles.sectionHead}>
+          <h2>Records</h2>
+          <Link href="#" className={styles.filterLink}>
+            Search &amp; filter — coming soon
           </Link>
         </div>
 
         {records.length === 0 ? (
-          <p style={{ opacity: 0.7, fontSize: "0.9375rem" }}>
-            No records yet. The audit columns (created by / updated by) are
-            wired up in the database.
+          <p className={styles.empty}>
+            No records yet. Once the import pipeline is connected, digitized
+            invoices will appear here with the client, dates, price, and
+            status.
           </p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <table
-              style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                fontSize: "0.875rem",
-              }}
-            >
-              <thead>
-                <tr style={{ textAlign: "left" }}>
-                  <th style={thStyle}>Client</th>
-                  <th style={thStyle}>Phone</th>
-                  <th style={thStyle}>Date</th>
-                  <th style={thStyle}>Date Promised</th>
-                  <th style={thStyle}>Price</th>
-                  <th style={thStyle}>Status</th>
-                  <th style={thStyle}>Created by</th>
-                  <th style={thStyle}>Updated by</th>
-                  <th style={thStyle}>Updated</th>
-                </tr>
-              </thead>
-              <tbody>
-                {records.map((r) => (
-                  <tr key={r.id} style={{ borderTop: "1px solid" }}>
-                    <td style={tdStyle}>{r.client_name ?? "-"}</td>
-                    <td style={tdStyle}>{r.phone_number ?? "-"}</td>
-                    <td style={tdStyle}>{r.date ?? "-"}</td>
-                    <td style={tdStyle}>{r.date_promised ?? "-"}</td>
-                    <td style={tdStyle}>{r.price ?? "-"}</td>
-                    <td style={tdStyle}>{r.status}</td>
-                    <td style={tdStyle}>{emailOf(r.creator) ?? "-"}</td>
-                    <td style={tdStyle}>{emailOf(r.updater) ?? "-"}</td>
-                    <td style={tdStyle}>
-                      {new Date(r.updated_at).toLocaleDateString()}
-                    </td>
+          <div className={styles.tableCard}>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Client</th>
+                    <th>Phone</th>
+                    <th>Date</th>
+                    <th>Date Promised</th>
+                    <th className={styles.cellNum}>Price</th>
+                    <th>Status</th>
+                    <th>Created by</th>
+                    <th>Updated by</th>
+                    <th>Updated</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {records.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.client_name ?? <span className={styles.cellMuted}>-</span>}</td>
+                      <td className={styles.cellMono}>
+                        {r.phone_number ?? "-"}
+                      </td>
+                      <td className={styles.cellMono}>
+                        {r.date ?? "-"}
+                      </td>
+                      <td className={styles.cellMono}>
+                        {r.date_promised ?? "-"}
+                      </td>
+                      <td className={`${styles.cellMono} ${styles.cellNum}`}>
+                        {r.price ?? "-"}
+                      </td>
+                      <td>
+                        <span className={styles.statusPill}>{r.status}</span>
+                      </td>
+                      <td className={styles.cellMuted}>
+                        {emailOf(r.creator) ?? "-"}
+                      </td>
+                      <td className={styles.cellMuted}>
+                        {emailOf(r.updater) ?? "-"}
+                      </td>
+                      <td className={styles.cellMono}>
+                        {new Date(r.updated_at).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </section>
     </main>
   );
 }
-
-const thStyle: React.CSSProperties = {
-  padding: "0.5rem 0.625rem",
-  borderBottom: "1px solid",
-};
-
-const tdStyle: React.CSSProperties = {
-  padding: "0.5rem 0.625rem",
-};
-
-const approveButtonStyle: React.CSSProperties = {
-  padding: "0.375rem 0.75rem",
-  border: "none",
-  borderRadius: "0.375rem",
-  background: "#15803d",
-  color: "#ffffff",
-  cursor: "pointer",
-  fontSize: "0.875rem",
-};
-
-const rejectButtonStyle: React.CSSProperties = {
-  padding: "0.375rem 0.75rem",
-  border: "1px solid #b91c1c",
-  background: "transparent",
-  color: "#b91c1c",
-  borderRadius: "0.375rem",
-  cursor: "pointer",
-  fontSize: "0.875rem",
-};

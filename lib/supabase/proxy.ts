@@ -28,10 +28,13 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Do not run any code between createServerClient and getClaims().
-  const { data } = await supabase.auth.getClaims();
+  // Validate the session with the auth server so stale/partially-exchanged
+  // cookies can't bounce authed(middleware)/unauthed(pages) forever.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const isAuthed = Boolean(data?.claims);
+  const isAuthed = Boolean(user);
   const { pathname } = request.nextUrl;
   const isPublicPath =
     pathname.startsWith("/login") ||
