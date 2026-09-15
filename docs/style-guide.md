@@ -77,7 +77,7 @@ Rules:
 | ------------ | ------------------- | ------------------------------------ |
 | Display      | serif 1.5rem / 600  | Page titles (dashboard masthead)     |
 | Title        | serif 1.375rem / 600 | Card titles (auth screens)          |
-| Section      | serif 1.125rem / 600 | Pending signups, Records headings    |
+| Section      | serif 1.125rem / 600 | Team headings, Record sections        |
 | Body         | 0.9375rem / 1.5     | Default                             |
 | Small        | 0.8125rem / 1.4     | Meta, table cells, hints             |
 | Eyebrow      | mono 0.6875rem / .18em ls / small-caps | Above auth titles, panel tags |
@@ -132,9 +132,11 @@ Rules:
 - Header cells: `--text-muted`, 600 weight, small caps optional.
 
 ### Status
-- Pending: claret (`--accent` as soft pill). Approved/active: `--success` pill.
+- Active (`approved`): `--success` pill.
 - `deleted`: soft-deleted accounts keep their profile (and email on records)
   but lose access; shown as a neutral pill, not a success/failure color.
+- Team rows: active/off tags (`--success` / neutral) plus a mono "you" tag
+  for the signed-in member.
 
 ## Against the generic
 
