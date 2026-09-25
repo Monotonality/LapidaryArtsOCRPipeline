@@ -31,8 +31,20 @@ flowchart TD
     Create["Record Creation"]
     Validate["Human-in-the-Loop
     Validation & Edit"]
-    OCR["OCR + AI
-    Recommended Record"]
+    Prepare["Browser image preparation
+    EXIF orientation, resize, JPEG"]
+    Health["Check local Ollama
+    model and origin access"]
+    OCR["Local Ollama Qwen3-VL
+    structured six-field response"]
+    Cloud["Optional OpenRouter Nemotron
+    photo sent via Next.js server"]
+    Check["Code validation
+    invalid / low confidence stays blank"]
+    Fallback["Optional PaddleOCR fallback
+    line selection / crops"]
+    Select["Staff tap text or draw crop
+    to read a field"]
     Photo["Photo of
     Physical Record"]
 
@@ -52,8 +64,16 @@ flowchart TD
     DB -->|feed| CSV
     Dash -->|export| CSV
     Dash -->|new record| Photo
-    Photo --> OCR
-    OCR --> Validate
+    Photo --> Health
+    Health --> Prepare
+    Prepare --> OCR
+    Prepare -->|staff chooses cloud reader| Cloud
+    OCR --> Check
+    Cloud --> Check
+    Check --> Validate
+    Health -->|unavailable| Fallback
+    Fallback --> Select
+    Select --> Validate
     Validate -->|reviewed & saved| Create
     Create -->|save verified record| DB
     DB --> Dash
@@ -84,12 +104,23 @@ flowchart TD
    - **Export path**: download the (filtered) records as a CSV file from the database.
    - **Create path**: walk the digitization workflow for a new record.
 7. **Photo of physical record** - staff capture the paper invoice.
-8. **OCR + AI recommended record** - Transformers.js reads the image and
-   suggests values for the six fields (Client Name, Phone Number, Date, Date
-   Promised, Instructions/Article Details, Price).
-9. **Human-in-the-loop validation** - staff review and correct the suggested
-   fields. Records have no database `status` column; drafts and OCR state
-   exist only in the browser until a verified record is saved.
+8. **Local model read** - the browser prepares the image and sends it to Ollama
+   on the staff computer. `qwen3-vl:4b-thinking` returns six values with
+   evidence and confidence. Code checks phones, dates, and totals before
+   auto-filling. Low-confidence or invalid readings are suggestions only.
+   PaddleOCR is available as an explicit fallback for text selection and crops.
+   Staff can choose OpenRouter instead: the browser sends the resized photo to
+   the authenticated Next.js route, which calls
+   `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free` using the server-only
+   `OPENROUTER_API_KEY`. Copy `.env.example` to `.env.local` and set that key to
+   enable it. The OpenRouter model currently relies on prompt-only JSON, so
+   malformed responses are rejected before field validation. Local Ollama
+   remains the default reader.
+   Date Promised durations remain suggestions because the database stores dates.
+9. **Human review** - staff compare each value with the photo, correct it,
+   and confirm review before saving. Records have no database `status` column;
+   drafts, photos, and OCR state exist only in the browser until verified
+   field values are saved. Photos are not archived by this flow.
 10. **Record creation** - the verified record is saved and becomes viewable,
     queryable, and exportable back on the dashboard.
 

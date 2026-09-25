@@ -5,5 +5,7 @@
  /.vercel
 .vercel
 .env*
+!.env.example
 *.log
 *.tsbuildinfo
+/public/ocr-fixtures/
