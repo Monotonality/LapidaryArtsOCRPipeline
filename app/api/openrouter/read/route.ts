@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { INVOICE_SCHEMA, parseFields, SYSTEM_PROMPT } from "@/app/add/ollama";
+import { INVOICE_SCHEMA, parseFields, SYSTEM_PROMPT } from "@/app/add/reader";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";

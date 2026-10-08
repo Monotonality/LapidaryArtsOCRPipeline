@@ -1,21 +1,28 @@
-import { FIELD_KEYS, type FieldKey } from "./field-mapper";
+export const FIELD_KEYS = [
+  "client_name",
+  "phone_number",
+  "date",
+  "date_promised",
+  "instructions",
+  "price",
+] as const;
 
-export const OLLAMA_URL = "http://localhost:11434";
-export const OLLAMA_MODEL = "qwen3-vl:4b-thinking";
-export const GEMMA_MODEL = "gemma4:e2b";
-const READ_TIMEOUT_MS = 300_000;
+export type FieldKey = (typeof FIELD_KEYS)[number];
 
 export type ModelField = {
   value: string | null;
   evidence: string | null;
   confidence: "high" | "low";
 };
+
 export type ModelFields = Record<FieldKey, ModelField>;
+
 export type CheckedField = ModelField & {
   filledValue: string | null;
   reviewValue: string | null;
   reason: string | null;
 };
+
 export type CheckedFields = Record<FieldKey, CheckedField>;
 
 const FIELD_SCHEMA = {
@@ -68,17 +75,6 @@ export function imageToBase64(file: File): Promise<string> {
   });
 }
 
-export async function checkOllama(model = OLLAMA_MODEL, signal?: AbortSignal): Promise<"ready" | "missing-model"> {
-  const response = await fetch(`${OLLAMA_URL}/api/tags`, { signal, cache: "no-store" });
-  if (!response.ok) throw new Error(`Ollama health check failed (${response.status}).`);
-  const data: unknown = await response.json();
-  if (!data || typeof data !== "object" || !("models" in data) || !Array.isArray(data.models)) {
-    throw new Error("Ollama returned an invalid model list.");
-  }
-  return data.models.some((item) => item && typeof item === "object" && "name" in item && item.name === model)
-    ? "ready" : "missing-model";
-}
-
 export function parseFields(content: string): ModelFields {
   const cleaned = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
   const parsed: unknown = JSON.parse(cleaned);
@@ -96,55 +92,7 @@ export function parseFields(content: string): ModelFields {
   return parsed as ModelFields;
 }
 
-export async function readWithOllama(file: File, signal: AbortSignal, model = OLLAMA_MODEL): Promise<{ fields: ModelFields; seconds: number }> {
-  const started = performance.now();
-  const timeout = new AbortController();
-  const timer = window.setTimeout(() => timeout.abort(new Error("Ollama timed out after 300 seconds.")), READ_TIMEOUT_MS);
-  const onAbort = () => timeout.abort(signal.reason);
-  signal.addEventListener("abort", onAbort, { once: true });
-  try {
-    const image = await imageToBase64(file);
-    if (signal.aborted) throw signal.reason ?? new DOMException("Cancelled", "AbortError");
-    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      signal: timeout.signal,
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: `Extract the six invoice fields from this image. JSON schema: ${JSON.stringify(INVOICE_SCHEMA)}`, images: [image] },
-        ],
-        format: INVOICE_SCHEMA,
-        think: true,
-        stream: false,
-        options: { temperature: 1, top_p: 0.95, top_k: model === GEMMA_MODEL ? 64 : 20, num_predict: 8192, num_ctx: 16384 },
-      }),
-    });
-    if (!response.ok) throw new Error(`Ollama returned ${response.status}: ${(await response.text()).slice(0, 180)}`);
-    const data: unknown = await response.json();
-    const message = data && typeof data === "object" && "message" in data ? data.message : null;
-    const content = message && typeof message === "object" && "content" in message ? message.content : null;
-    if (typeof content !== "string") throw new Error("Ollama did not return a structured response.");
-    if (!content.trim()) {
-      const meta = data as { done_reason?: string; eval_count?: number };
-      throw new Error(`Ollama returned no final JSON (reason: ${meta.done_reason ?? "unknown"}, generated tokens: ${meta.eval_count ?? "unknown"}). Retry or use PaddleOCR.`);
-    }
-    // message.thinking is deliberately ignored. It is never parsed or displayed.
-    try {
-      return { fields: parseFields(content), seconds: (performance.now() - started) / 1000 };
-    } catch {
-      const meta = data as { done_reason?: string; eval_count?: number };
-      throw new Error(`Ollama returned malformed final JSON (reason: ${meta.done_reason ?? "unknown"}, generated tokens: ${meta.eval_count ?? "unknown"}, content length: ${content.length}). Retry or use PaddleOCR.`);
-    }
-  } finally {
-    window.clearTimeout(timer);
-    signal.removeEventListener("abort", onAbort);
-    console.info(`Ollama ${model} invoice read: ${((performance.now() - started) / 1000).toFixed(1)}s`);
-  }
-}
-
-function parseDate(value: string): string | null {
+export function parseDate(value: string): string | null {
   const match = /^(\d{1,2})[/-](\d{1,2})[/-](\d{2}|\d{4})$/.exec(value.trim());
   if (!match) return null;
   const month = Number(match[1]);
