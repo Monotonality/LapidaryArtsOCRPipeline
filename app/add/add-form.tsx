@@ -2,8 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { createRecord } from "./actions";
-import { FIELD_KEYS, type FieldKey, type Rect, type Suggestions } from "./field-mapper";
-import type { CheckedFields } from "./ollama";
+import { FIELD_KEYS, type FieldKey, type CheckedFields } from "./reader";
 import { PhotoReader, type Evidence } from "./photo-reader";
 import styles from "./add.module.css";
 
@@ -19,11 +18,10 @@ function FieldSource({ source, onAccept }: { source?: Evidence; onAccept?: () =>
   if (!source) return null;
   return (
     <div className={styles.fieldSource}>
-      {source.preview && <img src={source.preview} alt="Selected source text" className={styles.sourcePreview} />}
       <span>
         {source.suggestion ? (
           <>
-            <strong>{source.source === "paddle" ? "Paddle suggestion" : "Model suggestion"}:</strong> {source.suggestion}<br />
+            <strong>Model suggestion:</strong> {source.suggestion}<br />
             <strong>Evidence:</strong> {source.raw || "None"}<br />
             {source.confidence && <><strong>Confidence:</strong> {source.confidence} · </>}{source.reason ?? "Filled for review"}
           </>
@@ -61,37 +59,13 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
     setPhotoKey((key) => key + 1);
   }
 
-  function applyAuto(suggestions: Suggestions, sources: EvidenceMap) {
-    setEvidence((current) => {
-      const next = { ...current };
-      for (const key of FIELD_KEYS) {
-        if (edited.has(key) || current[key]?.source === "ollama" || current[key]?.source === "openrouter") continue;
-        const item = suggestions[key];
-        if (sources[key] && item?.value) next[key] = {
-          ...sources[key], source: "paddle", suggestion: item.value,
-          acceptValue: item.value, reason: "PaddleOCR requires staff review",
-        };
-      }
-      return next;
-    });
-    setReviewed(false);
-  }
-
-  function applyField(key: FieldKey, value: string, source: Evidence) {
-    setForm((current) => ({ ...current, [key]: value }));
-    setEvidence((current) => ({ ...current, [key]: source }));
-    setEdited((current) => new Set(current).add(key));
-    setReviewed(false);
-  }
-
-  function applyModel(fields: CheckedFields, source: "ollama" | "openrouter") {
+  function applyModel(fields: CheckedFields) {
     setEvidence((current) => {
       const next = { ...current };
       for (const key of FIELD_KEYS) {
         if (edited.has(key)) continue;
         const item = fields[key];
         next[key] = {
-          source,
           raw: item.evidence ?? "",
           suggestion: item.value ?? undefined,
           acceptValue: item.reviewValue ?? undefined,
@@ -120,11 +94,6 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
     setReviewed(false);
   }
 
-  const sourceRects: Partial<Record<FieldKey, Rect>> = {};
-  for (const key of FIELD_KEYS) {
-    if (evidence[key]?.rect) sourceRects[key] = evidence[key].rect;
-  }
-
   return (
     <div className={styles.stage}>
       <div className={styles.tabs} role="tablist" aria-label="Add a record">
@@ -135,9 +104,14 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
       </div>
 
       <div className={styles.photoWrapper} hidden={mode !== "photo"}>
-        <PhotoReader key={photoKey} onPhotoChange={(selected) => {
-          setHasPhoto(selected); setForm(EMPTY); setEvidence({}); setEdited(new Set()); setReviewed(false);
-        }} onAuto={applyAuto} onModel={applyModel} onField={applyField} sourceRects={sourceRects} demo={demo} />
+        <PhotoReader
+          key={photoKey}
+          onPhotoChange={(selected) => {
+            setHasPhoto(selected); setForm(EMPTY); setEvidence({}); setEdited(new Set()); setReviewed(false);
+          }}
+          onModel={applyModel}
+          demo={demo}
+        />
       </div>
 
       <form action={demo ? undefined : formAction} onSubmit={demo ? (event) => event.preventDefault() : undefined} className={styles.form}>
@@ -186,7 +160,7 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
         )}
 
         {state.error && <p role="alert" className={styles.alertError}>{state.error}</p>}
-        {demo && <p className={styles.ocrNote}>Local demo: OCR and review work here. Saving needs the app&apos;s Supabase settings.</p>}
+        {demo && <p className={styles.ocrNote}>Local demo: AI OCR and review work here. Saving needs the app&apos;s Supabase settings.</p>}
         <div className={styles.formActions}>
           {demo ? (
             <button type="button" disabled className={styles.saveButton}>Save unavailable in demo</button>

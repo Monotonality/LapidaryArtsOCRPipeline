@@ -1,4 +1,4 @@
-import { imageToBase64, parseFields, type ModelFields } from "./ollama";
+import { imageToBase64, parseFields, type ModelFields } from "./reader";
 
 export type OpenRouterStatus = { configured: boolean; model: string };
 
