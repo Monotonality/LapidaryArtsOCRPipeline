@@ -425,3 +425,36 @@
     grid-template-columns: 1fr;
   }
 }
+.fieldSource {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.suggestionButton {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+}
+
+.reviewConfirm {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text);
+  font-size: 0.875rem;
+}
+
+.reviewConfirm input { accent-color: var(--accent); }
+
+.photoWrapper[hidden] { display: none; }

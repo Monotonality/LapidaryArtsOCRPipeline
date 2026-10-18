@@ -5,8 +5,10 @@
  /.vercel
 .vercel
 .env*
+!.env.example
 *.log
 *.tsbuildinfo
+/public/ocr-fixtures/
 
 # Prepared study corpus images (regenerate with scripts/prepare-corpus.mjs)
 /public/corpus/

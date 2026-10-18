@@ -31,8 +31,12 @@ flowchart TD
     Create["Record Creation"]
     Validate["Human-in-the-Loop
     Validation & Edit"]
-    OCR["OCR + AI
-    Recommended Record"]
+    Prepare["Browser image preparation
+    EXIF orientation, resize, JPEG"]
+    Cloud["OpenRouter Vision Model
+    photo sent via Next.js server route"]
+    Check["Code validation
+    invalid / low confidence stays blank"]
     Photo["Photo of
     Physical Record"]
 
@@ -52,8 +56,10 @@ flowchart TD
     DB -->|feed| CSV
     Dash -->|export| CSV
     Dash -->|new record| Photo
-    Photo --> OCR
-    OCR --> Validate
+    Photo --> Prepare
+    Prepare --> Cloud
+    Cloud --> Check
+    Check --> Validate
     Validate -->|reviewed & saved| Create
     Create -->|save verified record| DB
     DB --> Dash
@@ -84,12 +90,15 @@ flowchart TD
    - **Export path**: download the (filtered) records as a CSV file from the database.
    - **Create path**: walk the digitization workflow for a new record.
 7. **Photo of physical record** - staff capture the paper invoice.
-8. **OCR + AI recommended record** - Transformers.js reads the image and
-   suggests values for the six fields (Client Name, Phone Number, Date, Date
-   Promised, Instructions/Article Details, Price).
-9. **Human-in-the-loop validation** - staff review and correct the suggested
-   fields. Records have no database `status` column; drafts and OCR state
-   exist only in the browser until a verified record is saved.
+8. **AI model read** - the browser prepares the image and sends it via the
+   Next.js API route to OpenRouter. The vision model returns six values with
+   quoted evidence and confidence. Code checks phones, dates, and totals before
+   auto-filling. Low-confidence or invalid readings are suggestions only.
+   Date Promised durations remain suggestions because the database stores dates.
+9. **Human review** - staff compare each value with the photo, correct it,
+   and confirm review before saving. Records have no database `status` column;
+   drafts, photos, and OCR state exist only in the browser until verified
+   field values are saved. Photos are not archived by this flow.
 10. **Record creation** - the verified record is saved and becomes viewable,
     queryable, and exportable back on the dashboard.
 
