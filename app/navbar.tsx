@@ -10,6 +10,7 @@ type NavItem = { href: string; label: string };
 const items: NavItem[] = [
   { href: "/dashboard", label: "Records" },
   { href: "/add", label: "Add record" },
+  { href: "/study", label: "Study" },
   { href: "/team", label: "Team" },
   { href: "/settings", label: "Settings" },
 ];
@@ -27,7 +28,10 @@ export function Navbar({ email, isAdmin }: { email: string; isAdmin?: boolean })
 
         <nav className={styles.nav} aria-label="Primary">
           {visibleItems.map((item) => {
-            const active = pathname === item.href;
+            const active =
+              item.href === "/study"
+                ? pathname === item.href || pathname.startsWith("/study/")
+                : pathname === item.href;
             return (
               <Link
                 key={item.href}

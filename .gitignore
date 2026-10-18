@@ -7,3 +7,11 @@
 .env*
 *.log
 *.tsbuildinfo
+
+# Prepared study corpus images (regenerate with scripts/prepare-corpus.mjs)
+/public/corpus/
+
+# Source photo corpora (large binaries, kept local)
+/258PhotoCorpus/
+/258JpgCorpus/
+/InkParse_Study_Protocol.pdf
