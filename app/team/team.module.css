@@ -1,4 +1,4 @@
-/* Lapidary Arts Records — team member management.
+/* InkParse: team member management.
    Tokens from app/globals.css (see docs/style-guide.md). */
 
 .main {
@@ -15,7 +15,6 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
-  animation: rise 450ms var(--ease) 70ms both;
 }
 
 .pageTitle h1 {
@@ -50,7 +49,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
-  animation: rise 450ms var(--ease) 140ms both;
 }
 
 .sectionHead {
@@ -126,7 +124,7 @@
 
 .input:focus {
   border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--ring);
 }
 
 .addButton {
@@ -134,19 +132,19 @@
   border: none;
   border-radius: var(--radius-md);
   background: var(--accent);
-  color: #ffffff;
+  color: var(--on-accent);
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow-xs);
   flex-shrink: 0;
   transition:
-    filter 150ms var(--ease),
+    background 150ms var(--ease),
     transform 75ms var(--ease);
 }
 
-.addButton:hover {
-  filter: brightness(1.08);
+.addButton:hover:not(:disabled) {
+  background: var(--accent-hover);
 }
 
 .addButton:active {
@@ -154,7 +152,7 @@
 }
 
 .addButton:disabled {
-  filter: brightness(0.9);
+  opacity: 0.55;
   cursor: default;
 }
 

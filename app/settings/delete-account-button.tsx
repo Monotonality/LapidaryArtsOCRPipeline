@@ -35,7 +35,7 @@ export function DeleteAccountButton() {
     <div className={styles.confirmWrap}>
       <form action={formAction}>
         <button type="submit" disabled={pending} className={styles.confirmButton}>
-          {pending ? "Deleting…" : "Confirm — this can't be undone"}
+          {pending ? "Deleting…" : "Confirm: this can't be undone"}
         </button>
       </form>
       <button

@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InkParse UI Design Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #FFFFFF;
+    --band: #F6F7F8;
+    --surface: #FFFFFF;
+    --ink: #111113;
+    --ink-70: #4B4D52;
+    --ink-45: #8A8D94;
+    --line: #E4E6EA;
+    --line-strong: #C9CCD2;
+    --green: #00653A;
+    --green-tint: #E8F2ED;
+    --purple: #6D28D9;
+    --purple-tint: #F1ECFC;
+    --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    --pad: clamp(20px, 5vw, 48px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 var(--pad); }
+
+  section { padding: clamp(44px, 6vw, 72px) 0; }
+  section.band { background: var(--band); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+  .grid { display: grid; gap: 20px; }
+  .g-2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .g-3 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .g-4 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+
+  .muted { color: var(--ink-70); max-width: 68ch; }
+  .small { font-size: 13px; }
+
+  /* ---------- Top bar ---------- */
+  .top {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .top .inner {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; height: 56px; flex-wrap: wrap;
+  }
+  .wordmark { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14.5px; letter-spacing: -0.01em; }
+  .mark {
+    width: 24px; height: 24px; flex-shrink: 0;
+    background: var(--ink); color: #fff;
+    display: grid; place-items: center;
+    font-size: 13px; font-weight: 600;
+    border-radius: 3px;
+    border-bottom: 3px solid var(--green);
+  }
+  .wordmark .sub { color: var(--ink-45); font-weight: 500; }
+  .nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .nav a {
+    color: var(--ink-70); text-decoration: none;
+    font-size: 13px; font-weight: 500;
+    padding: 6px 10px; border-radius: 4px;
+  }
+  .nav a:hover { background: var(--band); color: var(--ink); }
+
+  /* ---------- Document head ---------- */
+  .doc-head { padding: clamp(40px, 6vw, 64px) 0 clamp(32px, 4vw, 48px); }
+  .doc-head .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px; font-weight: 500;
+    color: var(--ink-45); letter-spacing: 0.04em;
+    margin-bottom: 14px;
+  }
+  .doc-head h1 {
+    font-size: clamp(28px, 4vw, 38px);
+    font-weight: 600; letter-spacing: -0.02em; line-height: 1.15;
+    max-width: 22ch;
+  }
+  .doc-head .lede {
+    margin-top: 16px; font-size: 16px; color: var(--ink-70); max-width: 64ch;
+  }
+  .meta {
+    margin-top: 32px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .meta div { padding: 14px 16px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .meta .k {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--ink-45);
+  }
+  .meta .v { font-size: 13.5px; font-weight: 500; margin-top: 3px; }
+  .meta .v .m { font-family: var(--mono); font-size: 12.5px; }
+
+  /* ---------- Section heads ---------- */
+  .sec-head {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 24px; flex-wrap: wrap;
+    padding-bottom: 14px; margin-bottom: 32px;
+    border-bottom: 1px solid var(--line-strong);
+  }
+  .sec-head .left { display: flex; align-items: baseline; gap: 14px; }
+  .sec-head .num {
+    font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--ink-45);
+  }
+  .sec-head h2 { font-size: 21px; font-weight: 600; letter-spacing: -0.01em; }
+  .sec-head .note { font-size: 13px; color: var(--ink-45); max-width: 44ch; text-align: right; }
+
+  h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; }
+
+  /* ---------- Goals / principle boxes ---------- */
+  .box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 20px;
+  }
+  .box .idx {
+    font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink-45);
+  }
+  .box h4 { font-size: 14.5px; font-weight: 600; margin: 10px 0 6px; }
+  .box p { font-size: 13.5px; color: var(--ink-70); }
+  .box .req {
+    margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--line);
+    font-size: 12.5px; color: var(--ink-70);
+  }
+  .box .req strong { font-weight: 600; color: var(--ink); }
+
+  /* ---------- Color ---------- */
+  .swatch {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .swatch .chip { height: 72px; border-bottom: 1px solid var(--line); }
+  .swatch .info { padding: 12px 14px 14px; }
+  .swatch .name { font-size: 13px; font-weight: 600; }
+  .swatch .hex {
+    font-family: var(--mono); font-size: 12px; color: var(--ink-45);
+    text-transform: uppercase; margin-top: 2px;
+  }
+  .swatch .use { font-size: 12.5px; color: var(--ink-70); margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; }
+
+  .ratio {
+    display: flex; height: 44px; margin-top: 28px;
+    border: 1px solid var(--line-strong); border-radius: 4px; overflow: hidden;
+  }
+  .ratio span { display: grid; place-items: center; font-size: 10.5px; font-weight: 600; letter-spacing: 0.06em; }
+  .r-p1 { background: var(--bg); color: var(--ink-45); flex: 50; border-right: 1px solid var(--line); }
+  .r-p2 { background: var(--band); color: var(--ink-45); flex: 25; border-right: 1px solid var(--line); }
+  .r-p3 { background: var(--ink); color: #fff; flex: 20; }
+  .r-p4 { background: var(--green); color: #fff; flex: 3; border-left: 1px solid var(--line); }
+  .r-p5 { background: var(--purple); color: #fff; flex: 2; }
+
+  /* ---------- Tables ---------- */
+  .tbl { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 13.5px; }
+  .tbl th {
+    text-align: left; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-45);
+    padding: 10px 14px; border-bottom: 1px solid var(--line-strong);
+    background: var(--band);
+  }
+  .tbl td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .tbl td.m, .tbl th.m { font-family: var(--mono); font-size: 12.5px; }
+  .tbl td.num, .tbl th.num { text-align: right; font-family: var(--mono); font-size: 12.5px; }
+  .tbl tr:last-child td { border-bottom: 0; }
+  .tbl tr:hover td { background: var(--band); }
+  .tbl-wrap { border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+  .tbl-wrap .tbl th { border-bottom: 1px solid var(--line-strong); }
+
+  .spec-table td:first-child { font-weight: 600; white-space: nowrap; }
+
+  .sample-line {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+    padding: 20px 22px; margin-top: 16px;
+  }
+  .sample-line .lbl {
+    font-family: var(--mono); font-size: 11px; color: var(--ink-45);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px;
+  }
+
+  /* ---------- Demo boxes ---------- */
+  .demo {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 24px;
+  }
+  .demo .lbl {
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-45);
+    margin-bottom: 16px; display: flex; align-items: center; gap: 10px;
+  }
+  .demo .lbl::after { content: ""; flex: 1; border-top: 1px dashed var(--line); }
+  .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+  /* ---------- Buttons ---------- */
+  .btn {
+    font-family: var(--sans); font-size: 13.5px; font-weight: 600;
+    padding: 9px 18px; border-radius: 4px; border: 1px solid var(--ink);
+    cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+    transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  }
+  .btn:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .btn-primary { background: var(--ink); color: #fff; }
+  .btn-primary:hover { background: #2A2A2E; }
+  .btn-commit { background: var(--green); border-color: var(--green); color: #fff; }
+  .btn-commit:hover { background: #005230; }
+  .btn-ai { background: var(--purple-tint); border-color: var(--purple); color: var(--purple); }
+  .btn-ai:hover { background: #E5DCFA; }
+  .btn-secondary { background: #fff; color: var(--ink); border-color: var(--line-strong); }
+  .btn-secondary:hover { background: var(--band); }
+  .btn-ghost { background: transparent; border-color: transparent; color: var(--ink-70); }
+  .btn-ghost:hover { color: var(--ink); background: var(--band); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-sm { padding: 6px 12px; font-size: 12.5px; }
+
+  /* ---------- Badges ---------- */
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; padding: 4px 9px;
+    border-radius: 3px; border: 1px solid;
+  }
+  .badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .b-neutral { color: var(--ink-70); border-color: var(--line-strong); background: var(--band); }
+  .b-open { color: var(--ink); border-color: var(--ink); background: transparent; }
+  .b-ai { color: var(--purple); border-color: var(--purple); background: var(--purple-tint); }
+  .b-ok { color: var(--green); border-color: var(--green); background: var(--green-tint); }
+  .b-solid { color: #fff; border-color: var(--ink); background: var(--ink); }
+
+  /* ---------- Fields ---------- */
+  .field { display: flex; flex-direction: column; gap: 6px; max-width: 340px; }
+  .field label { font-size: 12.5px; font-weight: 600; }
+  .field input, .field select, .field textarea {
+    font-family: var(--sans); font-size: 14px;
+    padding: 9px 12px; background: #fff;
+    border: 1px solid var(--line-strong); border-radius: 4px; color: var(--ink);
+  }
+  .field input.m { font-family: var(--mono); font-size: 13.5px; }
+  .field input::placeholder { color: var(--ink-45); }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none; border-color: var(--ink); box-shadow: 0 0 0 2px rgba(17, 17, 19, 0.12);
+  }
+  .field .hint { font-size: 12px; color: var(--ink-45); }
+  .field .hint.ai { color: var(--purple); }
+  .field .hint.ok { color: var(--green); }
+
+  /* ---------- Callouts ---------- */
+  .callout {
+    border-left: 3px solid var(--purple); background: var(--purple-tint);
+    padding: 14px 16px; font-size: 13.5px; color: var(--ink-70); border-radius: 0 4px 4px 0;
+  }
+  .callout strong { color: var(--ink); font-weight: 600; }
+  .callout.ok { border-left-color: var(--green); background: var(--green-tint); }
+  .callout.flat { border-left-color: var(--line-strong); background: var(--band); }
+
+  /* ---------- Cards ---------- */
+  .card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 4px;
+    padding: 20px; display: flex; flex-direction: column; gap: 10px;
+    transition: border-color 0.12s ease;
+  }
+  .card:hover { border-color: var(--line-strong); }
+  .card .top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+  .card h4 { font-size: 15.5px; font-weight: 600; line-height: 1.3; }
+  .card p { font-size: 13.5px; color: var(--ink-70); }
+  .card .meta-row {
+    display: flex; gap: 14px; flex-wrap: wrap;
+    font-family: var(--mono); font-size: 12.5px; color: var(--ink-70);
+  }
+  .card .foot {
+    border-top: 1px solid var(--line); padding-top: 10px; margin-top: auto;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    font-size: 12.5px; color: var(--ink-45);
+  }
+  .card .link {
+    color: var(--ink); font-weight: 600; font-size: 13px; text-decoration: none;
+    border-bottom: 1px solid var(--ink); padding-bottom: 1px;
+  }
+  .card .link:hover { color: var(--green); border-bottom-color: var(--green); }
+  .tag {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
+    padding: 3px 8px; border: 1px solid var(--line-strong);
+    border-radius: 3px; color: var(--ink-70); background: var(--band);
+    font-family: var(--mono);
+  }
+  .avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--band); border: 1px solid var(--line-strong);
+    display: grid; place-items: center;
+    font-size: 15px; font-weight: 600; color: var(--ink);
+  }
+  .thumb {
+    height: 84px; border: 1px dashed var(--line-strong); border-radius: 4px;
+    background: var(--band); display: grid; place-items: center;
+    color: var(--ink-45); font-family: var(--mono); font-size: 11.5px; letter-spacing: 0.06em;
+  }
+
+  /* ---------- Stepper ---------- */
+  .stepper {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    border: 1px solid var(--line-strong); border-radius: 4px; overflow: hidden;
+    background: var(--surface);
+  }
+  .step { padding: 16px 14px; border-right: 1px solid var(--line); position: relative; }
+  .step:last-child { border-right: 0; }
+  .step .n { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink-45); }
+  .step .t { font-size: 12.5px; font-weight: 600; margin-top: 6px; line-height: 1.35; }
+  .step .s { font-size: 11.5px; color: var(--ink-45); margin-top: 3px; }
+  .step.done { background: var(--band); }
+  .step.done::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--green); }
+  .step.ai::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--purple); }
+  .step.active { background: var(--ink); color: #fff; }
+  .step.active .n { color: rgba(255,255,255,0.55); }
+  .step.active .s { color: rgba(255,255,255,0.55); }
+
+  /* ---------- Do / Don't ---------- */
+  .dd { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .dd .panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 4px; padding: 22px;
+  }
+  .dd h4 {
+    font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+    margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--line);
+  }
+  .dd .yes h4 { color: var(--green); }
+  .dd .no h4 { color: var(--ink); }
+  .dd ul { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+  .dd li { font-size: 13.5px; color: var(--ink-70); padding-left: 22px; position: relative; }
+  .dd li::before { position: absolute; left: 0; font-weight: 700; }
+  .dd .yes li::before { content: "\2713"; color: var(--green); }
+  .dd .no li::before { content: "\2715"; color: var(--ink-45); }
+
+  @media (max-width: 720px) {
+    .dd { grid-template-columns: 1fr; }
+    .stepper { grid-template-columns: 1fr; }
+    .step { border-right: 0; border-bottom: 1px solid var(--line); }
+    .sec-head .note { text-align: left; }
+  }
+
+  /* ---------- Footer ---------- */
+  footer {
+    background: var(--ink); color: #C9CCD2;
+    padding: clamp(36px, 5vw, 56px) 0 36px;
+  }
+  .fgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 28px; margin-bottom: 32px; }
+  footer h5 {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: var(--ink-45); margin-bottom: 12px;
+  }
+  footer a { color: #C9CCD2; text-decoration: none; font-size: 13.5px; display: block; padding: 3px 0; }
+  footer a:hover { color: #fff; text-decoration: underline; }
+  footer .fmark { display: flex; align-items: center; gap: 10px; color: #fff; font-weight: 600; font-size: 14.5px; margin-bottom: 14px; }
+  footer .fmark .mark { background: #fff; color: var(--ink); }
+  footer .blurb { font-size: 13px; color: var(--ink-45); max-width: 36ch; }
+  footer .disc {
+    border-top: 1px solid #26262A; padding-top: 20px;
+    font-size: 12px; line-height: 1.7; color: var(--ink-45); max-width: 92ch;
+  }
+  footer .disc + .disc { margin-top: 12px; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="wrap inner">
+    <div class="wordmark"><span class="mark">I</span> InkParse <span class="sub">/ UI Design Brief</span></div>
+    <nav class="nav" aria-label="Sections">
+      <a href="#goals">Goals</a>
+      <a href="#principles">Principles</a>
+      <a href="#color">Color</a>
+      <a href="#type">Type</a>
+      <a href="#components">Components</a>
+      <a href="#workflow">Workflow</a>
+      <a href="#rules">Rules</a>
+    </nav>
+  </div>
+</div>
+
+<header class="doc-head">
+  <div class="wrap">
+    <div class="eyebrow">DOCUMENT / UI-DB-001 / V1.0 / OCTOBER 2026</div>
+    <h1>InkParse UI Design Brief</h1>
+    <p class="lede">
+      Design requirements, tokens, and component specifications for the InkParse web
+      application, the record digitization tool built for Lapidary Arts Jewelry.
+      This brief is the source of truth for all interface work; implementation tokens
+      must match the values specified here.
+    </p>
+
+    <div class="meta">
+      <div><div class="k">Project</div><div class="v">InkParse</div></div>
+      <div><div class="k">Client</div><div class="v">Lapidary Arts Jewelry</div></div>
+      <div><div class="k">Prepared by</div><div class="v">InkParse Capstone Team, UT&nbsp;Dallas</div></div>
+      <div><div class="k">Status</div><div class="v">Proposed for approval</div></div>
+      <div><div class="k">Scope</div><div class="v">Dashboard, record entry, admin, settings, auth</div></div>
+      <div><div class="k">Palette</div><div class="v"><span class="m">Black / White + 2 accents</span></div></div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<!-- 01 GOALS -->
+<section id="goals">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="left"><span class="num">01</span><h2>Redesign Goals</h2></div>
+      <div class="note">What this UI revision must achieve, stated as testable requirements.</div>
+    </div>
+
+    <div class="grid g-4">
+      <div class="box">
+        <div class="idx">G1</div>
+        <h4>Reduce time per record</h4>
+        <p>The entry flow must not add steps beyond photo → review → save. Layout changes are evaluated against the speed metric in the study protocol.</p>
+        <div class="req"><strong>Measure:</strong> mean open-to-submit time, experimental group.</div>
+      </div>
+      <div class="box">
+        <div class="idx">G2</div>
+        <h4>Make value origin visible</h4>
+        <p>Every field must show whether a human confirmed it or the model proposed it, without relying on color alone.</p>
+        <div class="req"><strong>Measure:</strong> reviewers identify unconfirmed fields at a glance in usability checks.</div>
+      </div>
+      <div class="box">
+        <div class="idx">G3</div>
+        <h4>Support long sessions</h4>
+        <p>Staff work through hundreds of records per sitting. Density must stay readable and controls must stay reachable at all viewport sizes.</p>
+        <div class="req"><strong>Measure:</strong> 40px minimum targets, AA contrast, stable table layout at 1000 rows.</div>
+      </div>
+      <div class="box">
+        <div class="idx">G4</div>
+        <h4>One system, no per-page styling</h4>
+        <p>Dashboard, entry, admin, settings, and auth consume the same tokens and components. Page-level overrides are not permitted.</p>
+        <div class="req"><strong>Measure:</strong> all color, type, and spacing referenced through tokens.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 02 PRINCIPLES -->
+<section id="principles" class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="left"><span class="num">02</span><h2>Design Principles</h2></div>
+      <div class="note">The rules to apply when the spec doesn't cover a case.</div>
+    </div>
+
+    <div class="grid g-4">
+      <div class="box">
+        <div class="idx">P1</div>
+        <h4>Structure first, color last</h4>
+        <p>Hierarchy comes from size, weight, spacing, and 1px rules. If a screen needs color to look organized, fix the layout instead.</p>
+      </div>
+      <div class="box">
+        <div class="idx">P2</div>
+        <h4>Two typefaces, no more</h4>
+        <p>Inter for everything read as language. JetBrains Mono for everything read as data: IDs, phones, dates, prices, timestamps, tokens.</p>
+      </div>
+      <div class="box">
+        <div class="idx">P3</div>
+        <h4>Color encodes origin</h4>
+        <p>Green = confirmed by a person. Purple = produced by the model, unconfirmed. All other UI is black, white, and gray. Accents never exceed 5% of a screen.</p>
+      </div>
+      <div class="box">
+        <div class="idx">P4</div>
+        <h4>Nothing decorative</h4>
+        <p>No gradients, no shadows at rest, no illustrations in the work surface, no motion outside hover and focus. Every pixel is information or affordance.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 COLOR -->
+<section id="color">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="left"><span class="num">03</span><h2>Color</h2></div>
+      <div class="note">Two accents with fixed meanings. Everything else is neutral.</div>
+    </div>
+
+    <div class="grid g-4" style="margin-bottom: 24px;">
+      <div class="swatch">
+        <div class="chip" style="background:#F6F7F8"></div>
+        <div class="info"><div class="name">Canvas</div><div class="hex">#F6F7F8</div><div class="use">Page background</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#FFFFFF"></div>
+        <div class="info"><div class="name">Surface</div><div class="hex">#FFFFFF</div><div class="use">Cards, inputs, tables</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#111113"></div>
+        <div class="info"><div class="name">Ink</div><div class="hex">#111113</div><div class="use">Text, primary buttons, rules</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#4B4D52"></div>
+        <div class="info"><div class="name">Ink 70%</div><div class="hex">#4B4D52</div><div class="use">Body copy, secondary text</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#8A8D94"></div>
+        <div class="info"><div class="name">Ink 45%</div><div class="hex">#8A8D94</div><div class="use">Labels, placeholders, meta</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#E4E6EA"></div>
+        <div class="info"><div class="name">Line</div><div class="hex">#E4E6EA</div><div class="use">Borders, dividers, table rules</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#00653A"></div>
+        <div class="info"><div class="name">Green (verified)</div><div class="hex">#00653A</div><div class="use">Human-confirmed state, single commit action per view</div></div>
+      </div>
+      <div class="swatch">
+        <div class="chip" style="background:#6D28D9"></div>
+        <div class="info"><div class="name">Purple (model)</div><div class="hex">#6D28D9</div><div class="use">OCR suggestions, unconfirmed machine output</div></div>
+      </div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead>
+          <tr><th>Token</th><th class="m">Value</th><th>Role</th><th>Never</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>bg / surface</td><td class="m">#F6F7F8 / #FFFFFF</td><td>Page and card backgrounds</td><td>Not used for text</td></tr>
+          <tr><td>ink / ink-70 / ink-45</td><td class="m">#111113 / #4B4D52 / #8A8D94</td><td>Primary, secondary, tertiary text</td><td>ink-45 not used below 12px on tinted fills</td></tr>
+          <tr><td>line / line-strong</td><td class="m">#E4E6EA / #C9CCD2</td><td>Component borders, section rules</td><td>No borders heavier than 1px except 2px state rules</td></tr>
+          <tr><td>green</td><td class="m">#00653A</td><td>Verified state, commit button</td><td>Not for links, not for selection, not as a fill on large surfaces</td></tr>
+          <tr><td>purple</td><td class="m">#6D28D9</td><td>Model output pending confirmation</td><td>Not for human-authored content, not in navigation</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="ratio" role="img" aria-label="Color budget: 50 percent canvas, 25 percent surface, 20 percent ink, 3 percent green, 2 percent purple">
+      <span class="r-p1">CANVAS 50%</span>
+      <span class="r-p2">SURFACE 25%</span>
+      <span class="r-p3">INK 20%</span>
+      <span class="r-p4">3%</span>
+      <span class="r-p5">2%</span>
+    </div>
+    <p class="muted small" style="margin-top:12px;">
+      Green and purple share a fixed 5% budget and appear only as badges, field hints, 3px rules,
+      or one button per view. A dark theme inverts the neutrals and raises both accents one stop;
+      the meanings do not change.
+    </p>
+  </div>
+</section>
+
+<!-- 04 TYPOGRAPHY -->
+<section id="type" class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="left"><span class="num">04</span><h2>Typography</h2></div>
+      <div class="note">One sans, one mono. No display face.</div>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="tbl spec-table">
+        <thead>
+          <tr><th>Role</th><th>Family</th><th>Size / Line</th><th>Weight</th><th>Used for</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Page title</td><td>Inter</td><td class="m">28–32 / 1.2</td><td class="m">600</td><td>Screen headings (&ldquo;Records ledger&rdquo;)</td></tr>
+          <tr><td>Section title</td><td>Inter</td><td class="m">18–21 / 1.3</td><td class="m">600</td><td>Card and panel headings</td></tr>
+          <tr><td>Body</td><td>Inter</td><td class="m">15 / 1.6</td><td class="m">400</td><td>Descriptions, forms (max 62ch measure)</td></tr>
+          <tr><td>UI control</td><td>Inter</td><td class="m">13.5 / 1.4</td><td class="m">600</td><td>Buttons, tabs, table cells</td></tr>
+          <tr><td>Caption / hint</td><td>Inter</td><td class="m">12 / 1.5</td><td class="m">400</td><td>Field hints, timestamps, footnotes</td></tr>
+          <tr><td>Label</td><td>Inter</td><td class="m">11 / 1.0</td><td class="m">600</td><td>Uppercase, +0.08em tracking; table heads, badges</td></tr>
+          <tr><td>Data</td><td>JetBrains Mono</td><td class="m">12.5–15 / 1.4</td><td class="m">500</td><td>Record IDs, phones, dates, prices, tokens</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="sample-line">
+      <div class="lbl">Page title + body sample</div>
+      <div style="font-size:30px;font-weight:600;letter-spacing:-0.02em;line-height:1.2;">Records ledger</div>
+      <p class="muted" style="margin-top:8px;font-size:15px;">
+        261 historical records, searchable and exportable. Every value in this table was confirmed
+        by a person before it was saved.
+      </p>
+    </div>
+
+    <div class="sample-line">
+      <div class="lbl">Data sample: JetBrains Mono</div>
+      <div style="font-family:var(--mono);font-size:14.5px;font-weight:500;color:var(--ink-70);">
+        R-0142&nbsp;&nbsp;(214) 555-0163&nbsp;&nbsp;2026-10-17&nbsp;&nbsp;$1,850.00&nbsp;&nbsp;conf&nbsp;0.62&nbsp;&nbsp;1,982&nbsp;in / 312&nbsp;out
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 05 COMPONENTS -->
+<section id="components">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="left"><span class="num">05</span><h2>Components</h2></div>
+      <div class="note">Specimens at spec values. 4px radius throughout, borders not shadows.</div>
+    </div>
+
+    <div class="grid g-2" style="margin-bottom:20px;">
+      <div class="demo">
+        <div class="lbl">Buttons</div>
+        <div class="row" style="margin-bottom:12px;">
+          <button class="btn btn-primary">Save record</button>
+          <button class="btn btn-commit">Confirm &amp; verify</button>
+          <button class="btn btn-secondary">Cancel</button>
+        </div>
+        <div class="row">
+          <button class="btn btn-ai">Accept OCR suggestions</button>
+          <button class="btn btn-ghost">Discard</button>
+          <button class="btn btn-primary btn-sm">Add member</button>
+          <button class="btn btn-secondary btn-sm" disabled>Transfer admin</button>
+        </div>
+        <p class="muted small" style="margin-top:14px;">
+          Black is the default action. Green is the commit and appears once per view.
+          Purple is only ever an action that accepts machine output. Disabled: 40% opacity.
+        </p>
+      </div>
+
+      <div class="demo">
+        <div class="lbl">Status badges</div>
+        <div class="row" style="margin-bottom:14px;">
+          <span class="badge b-open">Unreviewed</span>
+          <span class="badge b-ai">OCR suggested</span>
+          <span class="badge b-ok">Verified</span>
+          <span class="badge b-solid">Admin</span>
+          <span class="badge b-neutral">Deactivated</span>
+        </div>
+        <p class="muted small">
+          Maps to record review states and <code>profiles.status</code> / <code>is_admin</code>.
+          Dot plus uppercase label; color is always paired with text so status survives
+          grayscale and colorblind use.
+        </p>
+      </div>
+    </div>
+
+    <div class="grid g-2" style="margin-bottom:20px;">
+      <div class="demo">
+        <div class="lbl">Form inputs: the six record fields</div>
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="field">
+            <label for="db-client">Client Name</label>
+            <input id="db-client" type="text" value="Maria Alvarez" />
+            <span class="hint ok">Confirmed against photo</span>
+          </div>
+          <div class="field">
+            <label for="db-phone">Phone Number</label>
+            <input id="db-phone" class="m" type="text" value="(214) 555-0163" />
+            <span class="hint ai">Model suggestion: confirm or overwrite</span>
+          </div>
+          <div class="field">
+            <label for="db-price">Price</label>
+            <input id="db-price" class="m" type="text" placeholder="$0.00" />
+            <span class="hint">Low confidence: check the photo</span>
+          </div>
+        </div>
+        <p class="muted small" style="margin-top:16px;">
+          Unconfirmed values carry a purple hint; confirmed values carry a green one.
+          Data-shaped inputs render in mono. Focus: 1px ink border + 2px ring.
+        </p>
+      </div>
+
+      <div class="demo">
+        <div class="lbl">Callouts</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="callout">
+            <strong>Low confidence on Price.</strong> Compare the field against the photographed invoice before verifying.
+          </div>
+          <div class="callout ok">
+            <strong>Record verified.</strong> Saved to the ledger as R-0142; timing log closed.
+          </div>
+          <div class="callout flat">
+            <strong>Import queued.</strong> 12 photos waiting to be parsed. You can keep working.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo" style="margin-bottom:20px;">
+      <div class="lbl">Cards: record, OCR intake, team member</div>
+      <div class="grid g-3">
+        <article class="card">
+          <div class="top-row">
+            <span class="tag">R-0142</span>
+            <span class="badge b-ok">Verified</span>
+          </div>
+          <h4>Maria Alvarez</h4>
+          <p>Prong repair on 14k ring, reset client&rsquo;s own stone. Promised before the holiday rush.</p>
+          <div class="meta-row"><span>(214) 555-0163</span><span>$1,850.00</span></div>
+          <div class="foot">
+            <span>Edited 2 min ago</span>
+            <a class="link" href="#">Open record &rarr;</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="top-row">
+            <span class="tag">IMG_0417.HEIC</span>
+            <span class="badge b-ai">OCR suggested</span>
+          </div>
+          <h4>3 of 6 fields need review</h4>
+          <div class="thumb">PHOTO PREVIEW</div>
+          <p>Extracted by Qwen 3.7 Flash. Purple fields are unconfirmed model output.</p>
+          <div class="foot">
+            <span>1,982 in / 312 out tokens</span>
+            <a class="link" href="#">Review &rarr;</a>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="top-row" style="align-items:center;">
+            <div style="display:flex;gap:12px;align-items:center;">
+              <div class="avatar">D</div>
+              <div>
+                <h4>Dana Reyes</h4>
+                <div style="font-size:12.5px;color:var(--ink-45);">Shop manager</div>
+              </div>
+            </div>
+            <span class="badge b-solid">Admin</span>
+          </div>
+          <p>Transcribed 148 records in the control group. Can reset member passwords and transfer the admin role.</p>
+          <div class="foot">
+            <span>dana@lapidaryarts.com</span>
+            <a class="link" href="#">Manage &rarr;</a>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <div class="demo">
+      <div class="lbl">Data table: records ledger</div>
+      <div class="tbl-wrap" style="border:0;">
+        <table class="tbl">
+          <thead>
+            <tr><th class="m">Record</th><th>Client</th><th class="m">Phone</th><th class="m">Date</th><th class="m">Promised</th><th class="num">Price</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="m">R-0142</td>
+              <td style="font-weight:600;">Maria Alvarez</td>
+              <td class="m">(214) 555-0163</td>
+              <td class="m">2026-10-12</td>
+              <td class="m">2026-10-19</td>
+              <td class="num">$1,850.00</td>
+              <td><span class="badge b-ok">Verified</span></td>
+            </tr>
+            <tr>
+              <td class="m">R-0143</td>
+              <td style="font-weight:600;">James Whitfield</td>
+              <td class="m">(972) 555-0148</td>
+              <td class="m">2026-10-14</td>
+              <td class="m">2026-10-21</td>
+              <td class="num">$420.00</td>
+              <td><span class="badge b-ai">OCR suggested</span></td>
+            </tr>
+            <tr>
+              <td class="m">R-0144</td>
+              <td style="font-weight:600;">Sophie Nguyen</td>
+              <td class="m">(469) 555-0102</td>
+              <td class="m">2026-10-15</td>
+              <td class="m">2026-10-28</td>
+              <td class="num">$3,200.00</td>
+              <td><span class="badge b-open">Unreviewed</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="muted small" style="margin-top:14px;">
+        Daily home screen. Mono columns for ID, phone, dates, price; prices right-align.
+        Sticky header on scroll, 1px row rules, no striping. Rows do not lift on hover;
+        background shifts to canvas only.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- 06 WORKFLOW -->
+<section id="workflow" class="band">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="left"><span class="num">06</span><h2>Record Workflow</h2></div>
+      <div class="note">Human-in-the-loop sequence from the study protocol, as UI states.</div>
+    </div>
+
+    <div class="stepper" role="list" aria-label="Record transcription workflow">
+      <div class="step done" role="listitem">
+        <div class="n">STEP 1</div><div class="t">Photo capture</div><div class="s">Complete</div>
+      </div>
+      <div class="step ai" role="listitem">
+        <div class="n">STEP 2</div><div class="t">Model extraction</div><div class="s">Machine output</div>
+      </div>
+      <div class="step active" role="listitem">
+        <div class="n">STEP 3</div><div class="t">Human field review</div><div class="s">In progress</div>
+      </div>
+      <div class="step" role="listitem">
+        <div class="n">STEP 4</div><div class="t">Corrections</div><div class="s">Pending</div>
+      </div>
+      <div class="step" role="listitem">
+        <div class="n">STEP 5</div><div class="t">Verified in ledger</div><div class="s">Pending</div>
+      </div>
+    </div>
+
+    <div class="grid g-3" style="margin-top:24px;">
+      <div class="callout"><strong>Model state (purple):</strong> fields show model output with confidence hints. Nothing persists until a person confirms it.</div>
+      <div class="callout ok"><strong>Verified state (green):</strong> the record commits to the database, the timing log closes, the row appears in the ledger.</div>
+      <div class="callout flat"><strong>Neutral state:</strong> plain surface, muted label; waiting on a photo upload or an upstream import.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 07 RULES -->
+<section id="rules">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="left"><span class="num">07</span><h2>Usage Rules</h2></div>
+      <div class="note">Non-negotiable. Design review checks against this list.</div>
+    </div>
+
+    <div class="dd">
+      <div class="panel yes">
+        <h4>Do</h4>
+        <ul>
+          <li>Pair every use of green or purple with a text label; color never carries meaning alone.</li>
+          <li>Set tabular data in mono so columns align: IDs, phones, dates, prices, timestamps.</li>
+          <li>Reserve green for the single commit action on a view (Confirm &amp; verify / Save).</li>
+          <li>Use purple strictly for model-originated content and the actions that accept it.</li>
+          <li>Keep 4px radius, 1px borders, and the 4px spacing scale; hit targets at least 40px.</li>
+          <li>Meet WCAG 2.1 AA: all text pairings specified here clear 4.5:1 in both themes.</li>
+        </ul>
+      </div>
+      <div class="panel no">
+        <h4>Don&rsquo;t</h4>
+        <ul>
+          <li>Don&rsquo;t fill headers, navigation, or sidebars with green or purple.</li>
+          <li>Don&rsquo;t use purple for human-entered content or green for mere selection states.</li>
+          <li>Don&rsquo;t add drop shadows, gradients, illustrations, or scroll-triggered animation.</li>
+          <li>Don&rsquo;t introduce a third typeface or a page-level style override.</li>
+          <li>Don&rsquo;t use official UT Dallas marks, logos, or the university wordmark without sponsorship; this palette is an homage, not a license.</li>
+          <li>Don&rsquo;t rely on hover-only affordances; every action must be reachable by keyboard.</li>
+          <li>Don&rsquo;t use em dashes in any interface copy, labels, hints, or documentation. Use a colon, a comma, or a full stop instead.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="fgrid">
+      <div>
+        <div class="fmark"><span class="mark">I</span> INKPARSE</div>
+        <p class="blurb">Handwritten jewelry records, digitized and verified, one record at a time.</p>
+      </div>
+      <div>
+        <h5>Screens</h5>
+        <a href="#">Records ledger</a>
+        <a href="#">Add record · OCR</a>
+        <a href="#">Edit record</a>
+        <a href="#">Team admin</a>
+        <a href="#">Settings</a>
+      </div>
+      <div>
+        <h5>Study</h5>
+        <a href="#">Protocol v1.2</a>
+        <a href="#">Speed &amp; accuracy</a>
+        <a href="#">ROI model</a>
+        <a href="#">Audit sheet</a>
+      </div>
+      <div>
+        <h5>Project</h5>
+        <a href="#">Style guide</a>
+        <a href="#">Workflow diagram</a>
+        <a href="#">Change log</a>
+      </div>
+    </div>
+
+    <p class="disc">
+      InkParse is built by the InkParse Capstone Team at The University of Texas at Dallas
+      under an evaluation protocol for Lapidary Arts Jewelry. It is not an official publication
+      of UT Dallas and does not represent the views of the university or its officers.
+      The University of Texas at Dallas is an Equal Opportunity/Affirmative Action University.
+    </p>
+    <p class="disc">
+      Students with disabilities needing special assistance to attend please call (972-883-6551).
+      Texas Relay Operation: 1-800-RELAYTX.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

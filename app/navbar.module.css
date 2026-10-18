@@ -1,5 +1,6 @@
-/* Lapidary Arts Records — top navigation.
-   Tokens from app/globals.css (see docs/style-guide.md). */
+/* InkParse: top navigation.
+   Tokens from app/globals.css (see docs/style-guide.md).
+   Active nav is ink on a muted surface; no accent color in navigation. */
 
 .navbar {
   position: sticky;

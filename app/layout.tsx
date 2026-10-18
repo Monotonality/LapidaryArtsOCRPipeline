@@ -1,35 +1,29 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { Archivo, Fraunces, Space_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
-const archivo = Archivo({
-  variable: "--font-archivo",
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-jetbrains",
   subsets: ["latin"],
-});
-
-const spaceMono = Space_Mono({
-  variable: "--font-space-mono",
-  subsets: ["latin"],
-  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "Lapidary Arts Records",
+  title: "InkParse",
   description:
-    "Digitizing the handwritten job cards of Lapidary Arts Jewelry — one invoice at a time.",
+    "Digitizing the handwritten job cards of Lapidary Arts Jewelry, one invoice at a time.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${archivo.variable} ${spaceMono.variable}`}
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
       <body>{children}</body>
     </html>

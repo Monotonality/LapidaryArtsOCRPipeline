@@ -10,15 +10,9 @@ export function Brand({
 }) {
   return (
     <div className={styles.brand}>
-      <span className={styles.gem} aria-hidden="true" />
+      <span className={styles.mark} aria-hidden="true" />
       <div>
-        <p className={styles.brandName}>
-          {name ?? (
-            <>
-              Lapidary <em>Arts</em> Records
-            </>
-          )}
-        </p>
+        <p className={styles.brandName}>{name ?? "InkParse"}</p>
         {tagline && <p className={styles.brandTagline}>{tagline}</p>}
       </div>
     </div>

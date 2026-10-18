@@ -48,7 +48,7 @@ export function AddRecord() {
 
   const handleModelProgress: OcrProgressHandler = ({ file, loaded, total }) => {
     const pct = Math.round((loaded / total) * 100);
-    setOcrNote(`Downloading ${file} — ${pct}% (one-time)`);
+    setOcrNote(`Downloading ${file}: ${pct}% (one-time)`);
   };
 
   function set<K extends keyof RecordFields>(key: K, value: string) {
@@ -79,7 +79,7 @@ export function AddRecord() {
     preloadOcrModel(model, handleModelProgress)
       .then(() => {
         if (!readStartedRef.current) {
-          setOcrNote("Reader ready — press Read card.");
+          setOcrNote("Reader ready. Press Read card.");
           setOcrState("idle");
         }
       })
@@ -121,7 +121,7 @@ export function AddRecord() {
 
       if (!text.trim()) {
         setOcrState("error");
-        setOcrNote("No text recognized — enter the details by hand below.");
+        setOcrNote("No text recognized. Enter the details by hand below.");
         return;
       }
 
@@ -138,13 +138,13 @@ export function AddRecord() {
       setOcrText(text.trim());
       setOcrState("done");
       setOcrNote(
-        "Read complete — check the suggested fields below before saving.",
+        "Read complete. Check the suggested fields below before saving.",
       );
     } catch (err) {
       console.error(err);
       setOcrState("error");
       setOcrNote(
-        "Reading failed — enter the details by hand below. If you want to retry, choose the photo again.",
+        "Reading failed. Enter the details by hand below. To retry, choose the photo again.",
       );
     }
   }
@@ -244,7 +244,7 @@ export function AddRecord() {
                     ocrState === "error"
                       ? styles.ocrNoteError
                       : ocrState === "done"
-                        ? styles.ocrNoteDone
+                        ? styles.ocrNoteModel
                         : styles.ocrNote
                   }
                 >

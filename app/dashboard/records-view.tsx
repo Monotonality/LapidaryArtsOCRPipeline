@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import styles from "./dashboard.module.css";
 
@@ -22,10 +22,52 @@ type SortKey =
   | "phone_number"
   | "date"
   | "date_promised"
-  | "price"
-  | "updated_at";
+  | "price";
 
 type SortDir = "asc" | "desc";
+
+type RangePreset = "any" | "today" | "d7" | "d30" | "month" | "custom";
+
+const RANGE_PRESETS: { value: RangePreset; label: string }[] = [
+  { value: "any", label: "Any date" },
+  { value: "today", label: "Today" },
+  { value: "d7", label: "Last 7 days" },
+  { value: "d30", label: "Last 30 days" },
+  { value: "month", label: "This month" },
+  { value: "custom", label: "Custom range" },
+];
+
+function localIso(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function rangeFromPreset(
+  preset: RangePreset,
+  from: string,
+  to: string,
+): { from: string; to: string } {
+  if (preset === "custom") return { from, to };
+  if (preset === "any") return { from: "", to: "" };
+
+  const today = new Date();
+
+  if (preset === "today") {
+    return { from: localIso(today), to: localIso(today) };
+  }
+
+  if (preset === "d7" || preset === "d30") {
+    const start = new Date(today);
+    start.setDate(start.getDate() - (preset === "d7" ? 6 : 29));
+    return { from: localIso(start), to: localIso(today) };
+  }
+
+  // month
+  const start = new Date(today.getFullYear(), today.getMonth(), 1);
+  return { from: localIso(start), to: localIso(today) };
+}
 
 const SORT_LABELS: Record<SortKey, string> = {
   client_name: "Client",
@@ -33,7 +75,6 @@ const SORT_LABELS: Record<SortKey, string> = {
   date: "Date",
   date_promised: "Date Promised",
   price: "Price",
-  updated_at: "Updated",
 };
 
 function emailOf(
@@ -53,8 +94,6 @@ function sortValue(row: RecordRow, key: SortKey): string | number {
   switch (key) {
     case "price":
       return toNumber(String(row.price ?? "")) ?? Number.NEGATIVE_INFINITY;
-    case "updated_at":
-      return row.updated_at;
     default:
       return row[key] ?? "";
   }
@@ -97,14 +136,39 @@ const EXPORT_COLUMNS = [
 
 export function RecordsView({ records }: { records: RecordRow[] }) {
   const [query, setQuery] = useState("");
+  const [datePreset, setDatePreset] = useState<RangePreset>("any");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
+  const [promisedPreset, setPromisedPreset] = useState<RangePreset>("any");
   const [promisedFrom, setPromisedFrom] = useState("");
   const [promisedTo, setPromisedTo] = useState("");
   const [priceMin, setPriceMin] = useState("");
   const [priceMax, setPriceMax] = useState("");
   const [sortKey, setSortKey] = useState<SortKey | null>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const filtersRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!filtersOpen) return;
+
+    function onPointerDown(e: PointerEvent) {
+      if (!filtersRef.current?.contains(e.target as Node)) {
+        setFiltersOpen(false);
+      }
+    }
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setFiltersOpen(false);
+    }
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [filtersOpen]);
 
   function toggleSort(key: SortKey) {
     if (sortKey === key) {
@@ -117,8 +181,10 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
 
   function clearFilters() {
     setQuery("");
+    setDatePreset("any");
     setDateFrom("");
     setDateTo("");
+    setPromisedPreset("any");
     setPromisedFrom("");
     setPromisedTo("");
     setPriceMin("");
@@ -129,6 +195,12 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
     const q = query.trim().toLowerCase();
     const priceMinN = toNumber(priceMin);
     const priceMaxN = toNumber(priceMax);
+    const dateRange = rangeFromPreset(datePreset, dateFrom, dateTo);
+    const promisedRange = rangeFromPreset(
+      promisedPreset,
+      promisedFrom,
+      promisedTo,
+    );
 
     let rows = records.filter((r) => {
       if (q) {
@@ -143,11 +215,18 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
         if (!haystack.includes(q)) return false;
       }
 
-      if (dateFrom && (!r.date || r.date < dateFrom)) return false;
-      if (dateTo && (!r.date || r.date > dateTo)) return false;
-      if (promisedFrom && (!r.date_promised || r.date_promised < promisedFrom))
+      if (dateRange.from && (!r.date || r.date < dateRange.from))
         return false;
-      if (promisedTo && (!r.date_promised || r.date_promised > promisedTo))
+      if (dateRange.to && (!r.date || r.date > dateRange.to)) return false;
+      if (
+        promisedRange.from &&
+        (!r.date_promised || r.date_promised < promisedRange.from)
+      )
+        return false;
+      if (
+        promisedRange.to &&
+        (!r.date_promised || r.date_promised > promisedRange.to)
+      )
         return false;
 
       const priceN = toNumber(String(r.price ?? ""));
@@ -178,8 +257,10 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
   }, [
     records,
     query,
+    datePreset,
     dateFrom,
     dateTo,
+    promisedPreset,
     promisedFrom,
     promisedTo,
     priceMin,
@@ -188,14 +269,11 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
     sortDir,
   ]);
 
-  const hasFilters =
-    query !== "" ||
-    dateFrom !== "" ||
-    dateTo !== "" ||
-    promisedFrom !== "" ||
-    promisedTo !== "" ||
-    priceMin !== "" ||
-    priceMax !== "";
+  const activeFilterCount =
+    (datePreset !== "any" ? 1 : 0) +
+    (promisedPreset !== "any" ? 1 : 0) +
+    (priceMin ? 1 : 0) +
+    (priceMax ? 1 : 0);
 
   function handleExport() {
     const body = filtered.map((r) => [
@@ -228,6 +306,141 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
           aria-label="Search records"
           className={styles.search}
         />
+        <div className={styles.filtersWrap} ref={filtersRef}>
+          <button
+            type="button"
+            aria-expanded={filtersOpen}
+            aria-haspopup="dialog"
+            onClick={() => setFiltersOpen((o) => !o)}
+            className={styles.filtersButton}
+          >
+            Filters
+            {activeFilterCount > 0 && (
+              <span className={styles.filtersBadge}>{activeFilterCount}</span>
+            )}
+          </button>
+
+          {filtersOpen && (
+            <div
+              role="dialog"
+              aria-label="Filter records"
+              className={styles.filterPopover}
+            >
+              <div className={styles.filterGrid}>
+                <label className={styles.filterField}>
+                  <span className={styles.filterLabel}>Date</span>
+                  <select
+                    value={datePreset}
+                    onChange={(e) =>
+                      setDatePreset(e.target.value as RangePreset)
+                    }
+                    className={styles.filterInput}
+                  >
+                    {RANGE_PRESETS.map((p) => (
+                      <option key={p.value} value={p.value}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className={styles.filterField}>
+                  <span className={styles.filterLabel}>Date promised</span>
+                  <select
+                    value={promisedPreset}
+                    onChange={(e) =>
+                      setPromisedPreset(e.target.value as RangePreset)
+                    }
+                    className={styles.filterInput}
+                  >
+                    {RANGE_PRESETS.map((p) => (
+                      <option key={p.value} value={p.value}>
+                        {p.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {datePreset === "custom" && (
+                  <div className={styles.rangeRow}>
+                    <label className={styles.filterField}>
+                      <span className={styles.filterLabel}>Date from</span>
+                      <input
+                        type="date"
+                        value={dateFrom}
+                        onChange={(e) => setDateFrom(e.target.value)}
+                        className={styles.filterInput}
+                      />
+                    </label>
+                    <label className={styles.filterField}>
+                      <span className={styles.filterLabel}>Date to</span>
+                      <input
+                        type="date"
+                        value={dateTo}
+                        onChange={(e) => setDateTo(e.target.value)}
+                        className={styles.filterInput}
+                      />
+                    </label>
+                  </div>
+                )}
+                {promisedPreset === "custom" && (
+                  <div className={styles.rangeRow}>
+                    <label className={styles.filterField}>
+                      <span className={styles.filterLabel}>Promised from</span>
+                      <input
+                        type="date"
+                        value={promisedFrom}
+                        onChange={(e) => setPromisedFrom(e.target.value)}
+                        className={styles.filterInput}
+                      />
+                    </label>
+                    <label className={styles.filterField}>
+                      <span className={styles.filterLabel}>Promised to</span>
+                      <input
+                        type="date"
+                        value={promisedTo}
+                        onChange={(e) => setPromisedTo(e.target.value)}
+                        className={styles.filterInput}
+                      />
+                    </label>
+                  </div>
+                )}
+                <label className={styles.filterField}>
+                  <span className={styles.filterLabel}>Price min</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={priceMin}
+                    onChange={(e) => setPriceMin(e.target.value)}
+                    placeholder="0.00"
+                    className={styles.filterInput}
+                  />
+                </label>
+                <label className={styles.filterField}>
+                  <span className={styles.filterLabel}>Price max</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(e.target.value)}
+                    placeholder="5000.00"
+                    className={styles.filterInput}
+                  />
+                </label>
+              </div>
+              <div className={styles.filterPopoverFooter}>
+                <button
+                  type="button"
+                  onClick={clearFilters}
+                  disabled={activeFilterCount === 0}
+                  className={styles.clearFilters}
+                >
+                  Clear all filters
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
         <button
           type="button"
           onClick={handleExport}
@@ -236,69 +449,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
         >
           Export CSV
         </button>
-      </div>
-
-      <div className={styles.filterGrid}>
-        <label className={styles.filterField}>
-          <span className={styles.filterLabel}>Date from</span>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className={styles.filterInput}
-          />
-        </label>
-        <label className={styles.filterField}>
-          <span className={styles.filterLabel}>Date to</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className={styles.filterInput}
-          />
-        </label>
-        <label className={styles.filterField}>
-          <span className={styles.filterLabel}>Promised from</span>
-          <input
-            type="date"
-            value={promisedFrom}
-            onChange={(e) => setPromisedFrom(e.target.value)}
-            className={styles.filterInput}
-          />
-        </label>
-        <label className={styles.filterField}>
-          <span className={styles.filterLabel}>Promised to</span>
-          <input
-            type="date"
-            value={promisedTo}
-            onChange={(e) => setPromisedTo(e.target.value)}
-            className={styles.filterInput}
-          />
-        </label>
-        <label className={styles.filterField}>
-          <span className={styles.filterLabel}>Price min</span>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={priceMin}
-            onChange={(e) => setPriceMin(e.target.value)}
-            placeholder="0.00"
-            className={styles.filterInput}
-          />
-        </label>
-        <label className={styles.filterField}>
-          <span className={styles.filterLabel}>Price max</span>
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            value={priceMax}
-            onChange={(e) => setPriceMax(e.target.value)}
-            placeholder="5000.00"
-            className={styles.filterInput}
-          />
-        </label>
       </div>
 
       {filtered.length === 0 ? (
@@ -320,7 +470,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
                       "date",
                       "date_promised",
                       "price",
-                      "updated_at",
                     ] as SortKey[]
                   ).map((key) => (
                     <th key={key}>
@@ -339,7 +488,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
                       </button>
                     </th>
                   ))}
-                  <th>Created by</th>
                   <th>Edit</th>
                 </tr>
               </thead>
@@ -361,12 +509,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
                     <td className={`${styles.cellMono} ${styles.cellNum}`}>
                       {r.price ?? "-"}
                     </td>
-                    <td className={styles.cellMono}>
-                      {new Date(r.updated_at).toLocaleDateString()}
-                    </td>
-                    <td className={styles.cellMuted}>
-                      {emailOf(r.creator) ?? "-"}
-                    </td>
                     <td>
                       <Link
                         href={`/edit/${r.id}`}
@@ -380,14 +522,6 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
               </tbody>
             </table>
           </div>
-        </div>
-      )}
-
-      {hasFilters && (
-        <div className={styles.clearRow}>
-          <button type="button" onClick={clearFilters} className={styles.clearFilters}>
-            Clear all filters
-          </button>
         </div>
       )}
     </section>

@@ -1,71 +1,91 @@
 /* ============================================================
-   Lapidary Arts Records — Design tokens
-   The single source of truth for color, type, spacing, and
-   elevation. Full reference: docs/style-guide.md
+   InkParse design tokens
+   Single source of truth for color, type, spacing, elevation.
+   Specified in design-brief.html; reference: docs/style-guide.md
+
+   Color rules:
+   - black, white, and gray carry the interface
+   - green = confirmed by a person (commit action, verified state)
+   - purple = produced by the model, unconfirmed
+   - accents never exceed 5% of a screen
    ============================================================ */
 
 :root {
-  /* ---- Brand palette: "Claret" (dark red, jewelry-wax inspired) ---- */
-  --claret-50: #fcf1f3;
-  --claret-100: #f9e2e7;
-  --claret-200: #f0c7cf;
-  --claret-300: #e39dab;
-  --claret-400: #d06d82;
-  --claret-500: #b9425f;
-  --claret-600: #a02c4a;
-  --claret-700: #8c1d33; /* brand anchor */
-  --claret-800: #741828;
-  --claret-900: #5c1220;
-  --claret-950: #3c0a13;
+  /* ---- Neutrals ---- */
+  --gray-50: #fafafa;
+  --gray-100: #f6f7f8;
+  --gray-200: #eef0f2;
+  --gray-300: #e4e6ea;
+  --gray-400: #c9ccd2;
+  --gray-500: #8a8d94;
+  --gray-600: #6b6e75;
+  --gray-700: #4b4d52;
+  --gray-800: #2a2a2e;
+  --gray-900: #111113;
+  --gray-950: #0a0a0b;
 
-  /* ---- Neutral scale: warm ink (flesh-tinted to stay cozy) ---- */
-  --ink-50: #faf7f6;
-  --ink-100: #f3eeec;
-  --ink-200: #e7dddc;
-  --ink-300: #d3c7c5;
-  --ink-400: #b8a6a4;
-  --ink-500: #92807f;
-  --ink-600: #6e5f63;
-  --ink-700: #4f4145;
-  --ink-800: #382d30;
-  --ink-900: #261a1d;
-  --ink-950: #170e11;
+  /* ---- Green: human-verified ---- */
+  --green-50: #e8f2ed;
+  --green-200: #c2dcd0;
+  --green-500: #00804c;
+  --green-600: #00653a;
+  --green-700: #005230;
+
+  /* ---- Purple: model output ---- */
+  --purple-50: #f1ecfc;
+  --purple-200: #d8cbf6;
+  --purple-500: #7c3ee8;
+  --purple-600: #6d28d9;
+  --purple-700: #5b1eb8;
 
   /* ---- Feedback ---- */
-  --green-600: #2e7d32;
-  --green-700: #256b2a;
   --red-600: #b3261e;
 
   /* ================= Semantic tokens (light) ================= */
-  --bg: var(--ink-50);
+  --bg: var(--gray-100);
   --surface: #ffffff;
-  --surface-muted: var(--ink-100);
-  --text: var(--ink-900);
-  --text-muted: var(--ink-600);
-  --text-faint: var(--ink-500);
-  --border: var(--ink-200);
-  --border-strong: var(--ink-300);
+  --surface-muted: var(--gray-100);
+  --text: var(--gray-900);
+  --text-muted: var(--gray-700);
+  --text-faint: var(--gray-500);
+  --border: var(--gray-300);
+  --border-strong: var(--gray-400);
 
-  --accent: var(--claret-700);
-  --accent-hover: #a1253f;
-  --accent-press: var(--claret-900);
-  --accent-soft: var(--claret-100);
-  --accent-border: var(--claret-200);
-  --on-accent: #fff6f7;
-  --ring: rgba(140, 29, 51, 0.18);
+  /* accent = default action (black) */
+  --accent: var(--gray-900);
+  --accent-hover: var(--gray-800);
+  --accent-press: #000000;
+  --accent-soft: var(--gray-200);
+  --accent-border: var(--gray-400);
+  --on-accent: #ffffff;
+  --ring: rgba(17, 17, 19, 0.14);
 
-  --success: var(--green-700);
-  --success-soft: #eaf5eb;
-  --success-border: #c5e3c8;
+  /* green = the commit action / verified state */
+  --green: var(--green-600);
+  --green-hover: var(--green-700);
+  --green-soft: var(--green-50);
+  --green-border: var(--green-200);
+  --on-green: #ffffff;
+
+  /* purple = model output pending confirmation */
+  --purple: var(--purple-600);
+  --purple-hover: var(--purple-700);
+  --purple-soft: var(--purple-50);
+  --purple-border: var(--purple-200);
+  --on-purple: #ffffff;
+
+  --success: var(--green-600);
+  --success-soft: var(--green-50);
+  --success-border: var(--green-200);
   --danger: var(--red-600);
   --danger-soft: #fdeceb;
   --danger-border: #f0c8c4;
 
   /* ---- Structure ---- */
-  --radius-sm: 0.375rem;
-  --radius-md: 0.625rem;
-  --radius-lg: 1rem;
-  --radius-pill: 999px;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.25rem;
+  --radius-pill: 0.1875rem;
 
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -77,55 +97,57 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  /* ---- Elevation ---- */
-  --shadow-xs: 0 1px 2px rgba(59, 16, 24, 0.05);
-  --shadow-sm: 0 1px 3px rgba(59, 16, 24, 0.08), 0 1px 2px rgba(59, 16, 24, 0.04);
-  --shadow-md: 0 4px 12px rgba(59, 16, 24, 0.1), 0 1px 3px rgba(59, 16, 24, 0.06);
-  --shadow-lg: 0 12px 32px rgba(59, 16, 24, 0.14), 0 3px 8px rgba(59, 16, 24, 0.06);
+  /* ---- Elevation: borders, not shadows ---- */
+  --shadow-xs: none;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
 
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
-  /* ---- Type ----
-     Deliberately not a default-alike stack (no Inter/Geist/Roboto):
-     Fraunces for display, Archivo for UI, Space Mono for data. */
-  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
-  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  --font-mono: var(--font-space-mono), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-
-  /* ---- Paper grain (subtle SVG turbulence, overlay blend) ---- */
-  --noise: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");
+  /* ---- Type: one sans, one mono ----
+     Inter for language, JetBrains Mono for data. */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: var(--ink-950);
-    --surface: #1e1519;
-    --surface-muted: #261b20;
-    --text: #f2e8ea;
-    --text-muted: #b5a2a7;
-    --text-faint: #8a767c;
-    --border: #3b2a30;
-    --border-strong: #503a42;
+    --bg: #0d0d0f;
+    --surface: #141417;
+    --surface-muted: #1c1c20;
+    --text: #f2f2f3;
+    --text-muted: #a5a5ad;
+    --text-faint: #74747c;
+    --border: #26262b;
+    --border-strong: #3a3a41;
 
-    --accent: #d44763;
-    --accent-hover: #dd5b74;
-    --accent-press: #b9324e;
-    --accent-soft: #3a1f28;
-    --accent-border: #6a3040;
-    --on-accent: #fff4f6;
-    --ring: rgba(212, 71, 99, 0.35);
+    --accent: #f2f2f3;
+    --accent-hover: #e0e0e4;
+    --accent-press: #d0d0d5;
+    --accent-soft: #232329;
+    --accent-border: #3a3a41;
+    --on-accent: #111113;
+    --ring: rgba(242, 242, 243, 0.3);
 
-    --success: #7fd18d;
-    --success-soft: #1d3321;
-    --success-border: #3a5a40;
-    --danger: #f0716b;
-    --danger-soft: #3a2021;
-    --danger-border: #68302f;
+    --green: #2fa36b;
+    --green-hover: #3db87c;
+    --green-soft: #12281e;
+    --green-border: #1f4534;
+    --on-green: #06110b;
 
-    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45), 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.6), 0 3px 8px rgba(0, 0, 0, 0.4);
+    --purple: #8b5cf6;
+    --purple-hover: #9d75f8;
+    --purple-soft: #201838;
+    --purple-border: #3b2c6b;
+    --on-purple: #0d0619;
+
+    --success: #2fa36b;
+    --success-soft: #12281e;
+    --success-border: #1f4534;
+    --danger: #f26d66;
+    --danger-soft: #2c1516;
+    --danger-border: #5c2a29;
   }
 }
 
@@ -164,19 +186,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* faint paper grain over the whole canvas — most "flat AI" pages lack texture */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  pointer-events: none;
-  background-image: var(--noise);
-  background-size: 160px 160px;
-  opacity: 0.028;
-  mix-blend-mode: overlay;
-}
-
 * {
   box-sizing: border-box;
   padding: 0;
@@ -189,7 +198,7 @@ body::before {
 }
 
 :focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 2px solid var(--text);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -206,20 +215,18 @@ textarea {
   font-family: inherit;
 }
 
-/* Display type: the serif is reserved for headings and the brand wordmark,
-   keeping body copy in the UI sans. */
 h1,
 h2,
 h3,
 h4 {
-  font-family: var(--font-display);
+  font-family: var(--font-sans);
+  font-weight: 600;
   letter-spacing: -0.01em;
 }
 
 h1,
 h2,
 h3 {
-  font-weight: 600;
   text-wrap: balance;
 }
 
@@ -231,18 +238,6 @@ samp {
 
 [hidden] {
   display: none !important;
-}
-
-/* ---- Entrance motion (transform/opacity only, out-of-the-box reduced) ---- */
-@keyframes rise {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

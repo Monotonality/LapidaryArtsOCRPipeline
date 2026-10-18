@@ -1,9 +1,8 @@
-/* Lapidary Arts Records — auth screens.
+/* InkParse: auth screens.
    Tokens from app/globals.css (see docs/style-guide.md).
 
-   The auth pages are a two-panel "ledger" composition: a dark claret
-   brand panel beside the form card. Deliberately asymmetric — the default
-   AI look is one centered card on an empty page. */
+   Two-panel composition: a flat ink brand panel beside the form card.
+   Black, white, and gray only; green marks the mark's baseline. */
 
 .auth {
   min-height: 100dvh;
@@ -18,12 +17,10 @@
   min-height: 32rem;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(21rem, 1fr);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
   background: var(--surface);
-  box-shadow: var(--shadow-lg);
   overflow: hidden;
-  animation: rise 460ms var(--ease) both;
 }
 
 /* ============================================================
@@ -37,35 +34,9 @@
   justify-content: space-between;
   gap: var(--space-8);
   padding: var(--space-8);
-  color: var(--claret-50);
-  background: linear-gradient(160deg, var(--claret-800) 0%, var(--claret-950) 100%);
-  overflow: hidden;
-}
-
-/* paper grain on the deep claret */
-.panel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: var(--noise);
-  background-size: 160px 160px;
-  opacity: 0.09;
-  pointer-events: none;
-}
-
-/* diamond "gem facet" lattice, cut across the corner */
-.panel::after {
-  content: "";
-  position: absolute;
-  top: -32%;
-  right: -22%;
-  width: 34rem;
-  height: 34rem;
-  background-image:
-    repeating-linear-gradient(45deg, transparent 0 26px, rgba(252, 241, 243, 0.07) 26px 27px),
-    repeating-linear-gradient(-45deg, transparent 0 26px, rgba(252, 241, 243, 0.07) 26px 27px);
-  transform: rotate(8deg);
-  pointer-events: none;
+  color: #ffffff;
+  background: var(--gray-950);
+  border-right: 1px solid var(--border);
 }
 
 .panelHead,
@@ -81,40 +52,29 @@
   gap: var(--space-5);
 }
 
-.panelGem {
+.panelMark {
   width: 2.75rem;
   height: 2.75rem;
-  transform: rotate(45deg);
-  border-radius: 0.5rem;
-  background: linear-gradient(135deg, #d44763, var(--claret-700));
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 246, 247, 0.28),
-    var(--shadow-xs);
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--gray-950);
   display: grid;
   place-items: center;
+  font-size: 1.25rem;
+  font-weight: 600;
+  border-bottom: 3px solid var(--green-500);
 }
 
-.panelGem::after {
-  content: "";
-  width: 0.85rem;
-  height: 0.85rem;
-  border-radius: 50%;
-  background: rgba(255, 246, 247, 0.92);
+.panelMark::after {
+  content: "I";
 }
 
 .panelName {
-  font-family: var(--font-display);
-  font-size: 1.625rem;
+  font-size: 1.375rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
   line-height: 1.1;
-  color: var(--claret-50);
-}
-
-.panelName em {
-  font-style: italic;
-  font-weight: 480;
-  color: #e89aac;
+  color: #ffffff;
 }
 
 .panelBody {
@@ -126,17 +86,16 @@
 .panelEyebrow {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  letter-spacing: 0.22em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(252, 241, 243, 0.72);
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .panelCopy {
-  font-family: var(--font-display);
-  font-size: 1.5625rem;
-  font-weight: 450;
-  line-height: 1.22;
-  max-width: 18ch;
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.3;
+  max-width: 20ch;
 }
 
 .panelFooter {
@@ -144,12 +103,12 @@
   flex-direction: column;
   gap: var(--space-3);
   padding-top: var(--space-4);
-  border-top: 1px solid rgba(252, 241, 243, 0.18);
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   line-height: 1.6;
   letter-spacing: 0.02em;
-  color: rgba(252, 241, 243, 0.78);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 /* ============================================================
@@ -163,16 +122,14 @@
   padding: calc(var(--space-8) + var(--space-1)) var(--space-8);
   background: var(--surface);
   position: relative;
-  animation: rise 460ms var(--ease) 90ms both;
 }
 
-/* thin claret rule across the top of the card (flat — no gradient) */
 .card::before {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
-  height: 3px;
-  background: var(--accent);
+  height: 2px;
+  background: var(--text);
 }
 
 .brand {
@@ -182,39 +139,30 @@
   user-select: none;
 }
 
-.gem {
+.mark {
   width: 1.5rem;
   height: 1.5rem;
-  transform: rotate(45deg);
-  border-radius: 0.25rem;
-  background: linear-gradient(135deg, var(--accent), var(--claret-800));
-  box-shadow: 0 0 0 1px var(--border-strong) inset, var(--shadow-xs);
+  border-radius: 3px;
+  background: var(--text);
+  border-bottom: 3px solid var(--green);
   display: grid;
   place-items: center;
   flex-shrink: 0;
 }
 
-.gem::after {
-  content: "";
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: var(--on-accent);
-  opacity: 0.9;
+.mark::after {
+  content: "I";
+  color: var(--bg);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
 }
 
 .brandName {
-  font-family: var(--font-display);
-  font-size: 1.0625rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.01em;
   color: var(--text);
-}
-
-.brandName em {
-  font-style: italic;
-  font-weight: 480;
-  color: var(--accent);
 }
 
 .brandTagline {
@@ -234,7 +182,7 @@
 .eyebrow {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--text-faint);
 }
@@ -242,6 +190,7 @@
 .title {
   font-size: 1.375rem;
   font-weight: 600;
+  letter-spacing: -0.02em;
   color: var(--text);
 }
 
@@ -263,22 +212,22 @@
   flex-direction: column;
   gap: var(--space-2);
   font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text);
 }
 
 .input {
   width: 100%;
   padding: var(--space-3) var(--space-4);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
   font-size: 0.9375rem;
   line-height: 1.5;
   transition:
-    border-color 150ms var(--ease),
-    box-shadow 150ms var(--ease);
+    border-color 120ms var(--ease),
+    box-shadow 120ms var(--ease);
 }
 
 .input::placeholder {
@@ -286,19 +235,19 @@
 }
 
 .input:hover {
-  border-color: var(--border-strong);
+  border-color: var(--text-faint);
 }
 
 .input:focus {
   outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--ring);
+  border-color: var(--text);
+  box-shadow: 0 0 0 2px var(--ring);
 }
 
 .button {
   margin-top: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  border: none;
+  border: 1px solid var(--accent);
   border-radius: var(--radius-md);
   background: var(--accent);
   color: var(--on-accent);
@@ -306,37 +255,37 @@
   font-size: 0.9375rem;
   line-height: 1.5;
   cursor: pointer;
-  box-shadow: var(--shadow-xs);
   transition:
-    background 150ms var(--ease),
-    transform 75ms var(--ease),
-    box-shadow 150ms var(--ease);
+    background 120ms var(--ease),
+    border-color 120ms var(--ease);
 }
 
 .button:hover:not(:disabled) {
   background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 .button:active:not(:disabled) {
-  transform: translateY(1px);
   background: var(--accent-press);
+  border-color: var(--accent-press);
 }
 
 .button:disabled {
-  opacity: 0.55;
+  opacity: 0.4;
   cursor: default;
 }
 
 .link {
-  color: var(--accent);
+  color: var(--text);
   font-size: 0.875rem;
+  font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 3px;
-  transition: color 150ms var(--ease);
+  transition: color 120ms var(--ease);
 }
 
 .link:hover {
-  color: var(--accent-hover);
+  color: var(--text-muted);
 }
 
 .linkRow {
@@ -361,7 +310,7 @@
 }
 
 .alert::before {
-  content: "✦";
+  content: "";
   flex-shrink: 0;
   font-size: 0.75rem;
   line-height: 1.5;
@@ -376,7 +325,7 @@
 }
 
 .alertError::before {
-  content: "✕";
+  content: "\2715";
 }
 
 .alertSuccess {
@@ -387,7 +336,7 @@
 }
 
 .alertSuccess::before {
-  content: "✓";
+  content: "\2713";
 }
 
 .debugReason {
@@ -426,6 +375,8 @@
     align-items: center;
     gap: var(--space-3);
     padding: var(--space-4) var(--space-5);
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
   }
 
   .panelHead {
@@ -434,9 +385,10 @@
     gap: var(--space-3);
   }
 
-  .panelGem {
+  .panelMark {
     width: 1.75rem;
     height: 1.75rem;
+    font-size: 1rem;
   }
 
   .panelName {

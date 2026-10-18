@@ -17,21 +17,19 @@ export function AuthShell({
       <div className={styles.stage}>
         <aside className={styles.panel}>
           <div className={styles.panelHead}>
-            <span className={styles.panelGem} aria-hidden="true" />
-            <p className={styles.panelName}>
-              Lapidary <em>Arts</em> Records
-            </p>
+            <span className={styles.panelMark} aria-hidden="true" />
+            <p className={styles.panelName}>InkParse</p>
           </div>
 
           <div className={styles.panelBody}>
-            <p className={styles.panelEyebrow}>Archived job cards</p>
+            <p className={styles.panelEyebrow}>Record digitization</p>
             <p className={styles.panelCopy}>
-              Handwritten invoices, typed up — record by record.
+              Handwritten job cards, typed up and verified, one record at a time.
             </p>
           </div>
 
           <p className={styles.panelFooter}>
-            Accounts are created by a team member —
+            Accounts are created by a team member,
             <br />
             so everyone on the ledger is known.
           </p>
