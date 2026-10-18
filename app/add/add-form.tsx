@@ -376,96 +376,132 @@ export function AddRecord() {
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Date</span>
             <div className={styles.dateRow}>
-              <select
-                aria-label="Month"
-                value={dateFields.month}
-                onChange={(e) =>
-                  setDateFields((d) => ({ ...d, month: e.target.value }))
-                }
-                className={styles.select}
-              >
-                {monthOpts.map((m) => (
-                  <option key={m} value={m}>
-                    {m.toString().padStart(2, "0")}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Day"
-                value={dateFields.day}
-                onChange={(e) =>
-                  setDateFields((d) => ({ ...d, day: e.target.value }))
-                }
-                className={styles.select}
-              >
-                {dayOpts.map((d) => (
-                  <option key={d} value={d}>
-                    {d.toString().padStart(2, "0")}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Year"
-                value={dateFields.year}
-                onChange={(e) =>
-                  setDateFields((d) => ({ ...d, year: e.target.value }))
-                }
-                className={styles.select}
-              >
-                {yearOpts.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
+              <div className={styles.wheelCol} role="group" aria-label="Month">
+                <div className={styles.wheel}>
+                  {monthOpts.map((m) => (
+                    <button
+                      type="button"
+                      key={m}
+                      onClick={() =>
+                        setDateFields((d) => ({ ...d, month: String(m) }))
+                      }
+                      className={
+                        Number(dateFields.month) === m
+                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
+                          : styles.wheelItem
+                      }
+                    >
+                      {m.toString().padStart(2, "0")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.wheelCol} role="group" aria-label="Day">
+                <div className={styles.wheel}>
+                  {dayOpts.map((d) => (
+                    <button
+                      type="button"
+                      key={d}
+                      onClick={() =>
+                        setDateFields((f) => ({ ...f, day: String(d) }))
+                      }
+                      className={
+                        Number(dateFields.day) === d
+                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
+                          : styles.wheelItem
+                      }
+                    >
+                      {d.toString().padStart(2, "0")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.wheelCol} role="group" aria-label="Year">
+                <div className={styles.wheel}>
+                  {yearOpts.map((y) => (
+                    <button
+                      type="button"
+                      key={y}
+                      onClick={() =>
+                        setDateFields((f) => ({ ...f, year: String(y) }))
+                      }
+                      className={
+                        Number(dateFields.year) === y
+                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
+                          : styles.wheelItem
+                      }
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </label>
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Date promised</span>
             <div className={styles.dateRow}>
-              <select
-                aria-label="Promised month"
-                value={promisedFields.month}
-                onChange={(e) =>
-                  setPromisedFields((d) => ({ ...d, month: e.target.value }))
-                }
-                className={styles.select}
-              >
-                {monthOpts.map((m) => (
-                  <option key={m} value={m}>
-                    {m.toString().padStart(2, "0")}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Promised day"
-                value={promisedFields.day}
-                onChange={(e) =>
-                  setPromisedFields((d) => ({ ...d, day: e.target.value }))
-                }
-                className={styles.select}
-              >
-                {dayOpts.map((d) => (
-                  <option key={d} value={d}>
-                    {d.toString().padStart(2, "0")}
-                  </option>
-                ))}
-              </select>
-              <select
-                aria-label="Promised year"
-                value={promisedFields.year}
-                onChange={(e) =>
-                  setPromisedFields((d) => ({ ...d, year: e.target.value }))
-                }
-                className={styles.select}
-              >
-                {yearOpts.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
+              <div className={styles.wheelCol} role="group" aria-label="Promised month">
+                <div className={styles.wheel}>
+                  {monthOpts.map((m) => (
+                    <button
+                      type="button"
+                      key={m}
+                      onClick={() =>
+                        setPromisedFields((d) => ({ ...d, month: String(m) }))
+                      }
+                      className={
+                        Number(promisedFields.month) === m
+                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
+                          : styles.wheelItem
+                      }
+                    >
+                      {m.toString().padStart(2, "0")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.wheelCol} role="group" aria-label="Promised day">
+                <div className={styles.wheel}>
+                  {dayOpts.map((d) => (
+                    <button
+                      type="button"
+                      key={d}
+                      onClick={() =>
+                        setPromisedFields((f) => ({ ...f, day: String(d) }))
+                      }
+                      className={
+                        Number(promisedFields.day) === d
+                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
+                          : styles.wheelItem
+                      }
+                    >
+                      {d.toString().padStart(2, "0")}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.wheelCol} role="group" aria-label="Promised year">
+                <div className={styles.wheel}>
+                  {yearOpts.map((y) => (
+                    <button
+                      type="button"
+                      key={y}
+                      onClick={() =>
+                        setPromisedFields((f) => ({ ...f, year: String(y) }))
+                      }
+                      className={
+                        Number(promisedFields.year) === y
+                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
+                          : styles.wheelItem
+                      }
+                    >
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </label>
 
