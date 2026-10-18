@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { createRecord } from "./actions";
 import {
   runOcr,
@@ -45,76 +45,6 @@ export function AddRecord() {
   const [ocrNote, setOcrNote] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const readStartedRef = useRef(false);
-
-  const now = new Date();
-  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-
-  const [dateFields, setDateFields] = useState({
-    month: String(now.getMonth() + 1),
-    day: String(now.getDate()),
-    year: String(now.getFullYear()),
-  });
-  const [promisedFields, setPromisedFields] = useState({
-    month: String(now.getMonth() + 1),
-    day: String(now.getDate()),
-    year: String(now.getFullYear()),
-  });
-
-  useEffect(() => {
-    const monthNum = parseInt(dateFields.month);
-    const dayNum = parseInt(dateFields.day);
-    const yearNum = parseInt(dateFields.year);
-    if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && yearNum >= 1900 && yearNum <= 2100) {
-      const mm = String(monthNum).padStart(2, "0");
-      const dd = String(dayNum).padStart(2, "0");
-      set("date", `${yearNum}-${mm}-${dd}`);
-    } else if (form.date) {
-      set("date", "");
-    }
-
-    // auto-scroll active items into view
-    setTimeout(() => {
-      document.querySelectorAll(".date-wheels").forEach((root) => {
-        const groups = root.querySelectorAll("[data-wheel-group]");
-        groups.forEach((g) => {
-          const active = g.querySelector(".active-wheel");
-          if (active) {
-            active.scrollIntoView({ block: "center", behavior: "auto" });
-          }
-        });
-      });
-    }, 0);
-  }, [dateFields, form.date]);
-
-  useEffect(() => {
-    const monthNum = parseInt(promisedFields.month);
-    const dayNum = parseInt(promisedFields.day);
-    const yearNum = parseInt(promisedFields.year);
-    if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && yearNum >= 1900 && yearNum <= 2100) {
-      const mm = String(monthNum).padStart(2, "0");
-      const dd = String(dayNum).padStart(2, "0");
-      set("date_promised", `${yearNum}-${mm}-${dd}`);
-    } else if (form.date_promised) {
-      set("date_promised", "");
-    }
-
-    setTimeout(() => {
-      document.querySelectorAll(".promised-wheels").forEach((root) => {
-        const groups = root.querySelectorAll("[data-wheel-group]");
-        groups.forEach((g) => {
-          const active = g.querySelector(".active-wheel");
-          if (active) {
-            active.scrollIntoView({ block: "center", behavior: "auto" });
-          }
-        });
-      });
-    }, 0);
-  }, [promisedFields, form.date_promised]);
-
-  const monthOpts = Array.from({ length: 12 }, (_, i) => i + 1);
-  const dayOpts = Array.from({ length: 31 }, (_, i) => i + 1);
-  const currentYear = new Date().getFullYear();
-  const yearOpts = Array.from({ length: 121 }, (_, i) => currentYear + 20 - i);
 
   const handleModelProgress: OcrProgressHandler = ({ file, loaded, total }) => {
     const pct = Math.round((loaded / total) * 100);
