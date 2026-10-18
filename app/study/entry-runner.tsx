@@ -41,6 +41,27 @@ const EMPTY_FIELDS: Fields = {
 
 const FIELD_KEYS = Object.keys(EMPTY_FIELDS) as (keyof Fields)[];
 
+const EMPTY_NA: Record<keyof Fields, boolean> = {
+  client_name: false,
+  phone_number: false,
+  date: false,
+  date_promised: false,
+  instructions: false,
+  price: false,
+};
+
+function rowToNa(row: StudyEntryRow | null | undefined): Record<keyof Fields, boolean> {
+  if (!row) return EMPTY_NA;
+  return {
+    client_name: row.client_name === "N/A",
+    phone_number: row.phone_number === "N/A",
+    date: row.date === "N/A",
+    date_promised: row.date_promised === "N/A",
+    instructions: row.instructions === "N/A",
+    price: false,
+  };
+}
+
 function rowToFields(row: StudyEntryRow | null | undefined): Fields {
   if (!row) return EMPTY_FIELDS;
   return {
@@ -80,6 +101,7 @@ export function EntryRunner({
     initialLabel ?? CORPUS[0]?.label ?? null,
   );
   const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
+  const [na, setNa] = useState<Record<keyof Fields, boolean>>(EMPTY_NA);
   const [modelFields, setModelFields] = useState<Set<string>>(new Set());
   const [openedAtMs, setOpenedAtMs] = useState<number>(() => Date.now());
   const [elapsed, setElapsed] = useState(0);
@@ -110,6 +132,7 @@ export function EntryRunner({
   useEffect(() => {
     let cancelled = false;
     setPhotoMissing(false);
+    setNa(EMPTY_NA);
     setModelFields(new Set());
     setOcrNote("");
     setOcrRaw("");
@@ -131,6 +154,7 @@ export function EntryRunner({
       .then(({ data }) => {
         if (cancelled) return;
         setFields(rowToFields(data as StudyEntryRow | null));
+        setNa(rowToNa(data as StudyEntryRow | null));
         setHadPriorEntry(Boolean(data));
       });
 
@@ -180,6 +204,10 @@ export function EntryRunner({
     setOpenedAtMs(Date.now());
   }
 
+  function toggleNa(key: keyof Fields) {
+    setNa((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
   async function runOcr() {
     if (!label || busy) return;
     const img = document.querySelector<HTMLImageElement>("[data-corpus-image]");
@@ -222,6 +250,11 @@ export function EntryRunner({
             filled.add(key);
           }
         }
+        return next;
+      });
+      setNa((prev) => {
+        const next = { ...prev };
+        for (const key of filled) next[key as keyof Fields] = false;
         return next;
       });
       setModelFields(filled);
@@ -319,12 +352,36 @@ export function EntryRunner({
             name="opened_at"
             value={new Date(openedAtMs).toISOString()}
           />
-          <input type="hidden" name="client_name" value={fields.client_name} />
-          <input type="hidden" name="phone_number" value={fields.phone_number} />
-          <input type="hidden" name="date" value={fields.date} />
-          <input type="hidden" name="date_promised" value={fields.date_promised} />
-          <input type="hidden" name="instructions" value={fields.instructions} />
-          <input type="hidden" name="price" value={fields.price} />
+          <input
+            type="hidden"
+            name="client_name"
+            value={na.client_name ? "N/A" : fields.client_name}
+          />
+          <input
+            type="hidden"
+            name="phone_number"
+            value={na.phone_number ? "N/A" : fields.phone_number}
+          />
+          <input
+            type="hidden"
+            name="date"
+            value={na.date ? "N/A" : fields.date}
+          />
+          <input
+            type="hidden"
+            name="date_promised"
+            value={na.date_promised ? "N/A" : fields.date_promised}
+          />
+          <input
+            type="hidden"
+            name="instructions"
+            value={na.instructions ? "N/A" : fields.instructions}
+          />
+          <input
+            type="hidden"
+            name="price"
+            value={na.price ? "" : fields.price}
+          />
           <input
             type="hidden"
             name="input_tokens"
@@ -361,77 +418,144 @@ export function EntryRunner({
 
           <div className={styles.fields}>
             <label className={styles.field}>
-              <span>Client name</span>
+              <span className={styles.fieldHead}>
+                <span>Client name</span>
+                <span className={styles.naTick}>
+                  <input
+                    type="checkbox"
+                    checked={na.client_name}
+                    onChange={() => toggleNa("client_name")}
+                  />
+                  N/A
+                </span>
+              </span>
               <input
                 type="text"
-                value={fields.client_name}
+                value={na.client_name ? "" : fields.client_name}
                 onChange={(e) => setField("client_name", e.target.value)}
-                required
+                required={!na.client_name}
+                disabled={na.client_name}
                 autoComplete="off"
+                placeholder={na.client_name ? "N/A" : undefined}
                 className={`${styles.input} ${
                   modelFields.has("client_name") ? styles.inputModel : ""
                 }`}
               />
             </label>
             <label className={styles.field}>
-              <span>Phone number</span>
+              <span className={styles.fieldHead}>
+                <span>Phone number</span>
+                <span className={styles.naTick}>
+                  <input
+                    type="checkbox"
+                    checked={na.phone_number}
+                    onChange={() => toggleNa("phone_number")}
+                  />
+                  N/A
+                </span>
+              </span>
               <input
                 type="text"
-                value={fields.phone_number}
+                value={na.phone_number ? "" : fields.phone_number}
                 onChange={(e) => setField("phone_number", e.target.value)}
+                disabled={na.phone_number}
                 autoComplete="off"
+                placeholder={na.phone_number ? "N/A" : undefined}
                 className={`${styles.input} ${styles.inputMono} ${
                   modelFields.has("phone_number") ? styles.inputModel : ""
                 }`}
               />
             </label>
             <label className={styles.field}>
-              <span>Date</span>
+              <span className={styles.fieldHead}>
+                <span>Date</span>
+                <span className={styles.naTick}>
+                  <input
+                    type="checkbox"
+                    checked={na.date}
+                    onChange={() => toggleNa("date")}
+                  />
+                  N/A
+                </span>
+              </span>
               <input
                 type="text"
                 inputMode="numeric"
-                value={fields.date}
+                value={na.date ? "" : fields.date}
                 onChange={(e) => setField("date", e.target.value)}
-                placeholder="YYYY-MM-DD"
+                disabled={na.date}
+                placeholder={na.date ? "N/A" : "YYYY-MM-DD"}
                 className={`${styles.input} ${styles.inputMono} ${
                   modelFields.has("date") ? styles.inputModel : ""
                 }`}
               />
             </label>
             <label className={styles.field}>
-              <span>Date promised</span>
+              <span className={styles.fieldHead}>
+                <span>Date promised</span>
+                <span className={styles.naTick}>
+                  <input
+                    type="checkbox"
+                    checked={na.date_promised}
+                    onChange={() => toggleNa("date_promised")}
+                  />
+                  N/A
+                </span>
+              </span>
               <input
                 type="text"
                 inputMode="numeric"
-                value={fields.date_promised}
+                value={na.date_promised ? "" : fields.date_promised}
                 onChange={(e) => setField("date_promised", e.target.value)}
-                placeholder="YYYY-MM-DD"
+                disabled={na.date_promised}
+                placeholder={na.date_promised ? "N/A" : "YYYY-MM-DD"}
                 className={`${styles.input} ${styles.inputMono} ${
                   modelFields.has("date_promised") ? styles.inputModel : ""
                 }`}
               />
             </label>
             <label className={styles.field}>
-              <span>Price</span>
+              <span className={styles.fieldHead}>
+                <span>Price</span>
+                <span className={styles.naTick}>
+                  <input
+                    type="checkbox"
+                    checked={na.price}
+                    onChange={() => toggleNa("price")}
+                  />
+                  N/A
+                </span>
+              </span>
               <input
                 type="text"
                 inputMode="decimal"
-                value={fields.price}
+                value={na.price ? "" : fields.price}
                 onChange={(e) => setField("price", e.target.value)}
-                placeholder="e.g. 125.50"
+                disabled={na.price}
+                placeholder={na.price ? "N/A" : "e.g. 125.50"}
                 className={`${styles.input} ${styles.inputMono} ${
                   modelFields.has("price") ? styles.inputModel : ""
                 }`}
               />
             </label>
-            <label
-              className={`${styles.field} ${styles.fieldFull}`}
-            >
-              <span>Instructions / article details</span>
+            <label className={`${styles.field} ${styles.fieldFull}`}>
+              <span className={styles.fieldHead}>
+                <span>Instructions / article details</span>
+                <span className={styles.naTick}>
+                  <input
+                    type="checkbox"
+                    checked={na.instructions}
+                    onChange={() => toggleNa("instructions")}
+                  />
+                  N/A
+                </span>
+              </span>
               <textarea
-                value={fields.instructions}
+                value={na.instructions ? "" : fields.instructions}
                 onChange={(e) => setField("instructions", e.target.value)}
+                disabled={na.instructions}
                 rows={4}
+                placeholder={na.instructions ? "N/A" : undefined}
                 className={`${styles.textarea} ${
                   modelFields.has("instructions") ? styles.inputModel : ""
                 }`}
