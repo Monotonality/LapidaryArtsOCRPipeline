@@ -302,6 +302,29 @@
   color: var(--text-muted);
 }
 
+.fieldHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.naTick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.naTick input {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .input,
 .textarea {
   width: 100%;

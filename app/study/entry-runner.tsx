@@ -231,7 +231,7 @@ export function EntryRunner({
       });
       setOcrRaw(result.raw ?? "");
       setOcrNote(
-        "Extraction complete. Review every field; purple fields are unconfirmed model output.",
+        "Extraction complete. Fields are filled in — correct anything wrong, then save.",
       );
     } catch (err) {
       console.error(err);
@@ -346,6 +346,15 @@ export function EntryRunner({
               >
                 {busy ? "Extracting…" : "Run OCR"}
               </button>
+              {modelFields.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setModelFields(new Set())}
+                  className={styles.buttonQuiet}
+                >
+                  Accept all
+                </button>
+              )}
               {ocrNote && <span className={styles.noteModel}>{ocrNote}</span>}
             </div>
           )}

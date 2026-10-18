@@ -36,6 +36,14 @@ export function AddRecord() {
   const [mode, setMode] = useState<Mode>("form");
 
   const [form, setForm] = useState<RecordFields>(EMPTY);
+  const [na, setNa] = useState<Record<keyof RecordFields, boolean>>({
+    client_name: false,
+    phone_number: false,
+    date: false,
+    date_promised: false,
+    instructions: false,
+    price: false,
+  });
   const [state, formAction, saving] = useActionState(createRecord, {});
 
   const [imageUrl, setImageUrl] = useState<string | null>(null);
@@ -55,8 +63,20 @@ export function AddRecord() {
     setForm((f) => ({ ...f, [key]: value }));
   }
 
+  function toggleNa(key: keyof RecordFields) {
+    setNa((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
   function clearAll() {
     setForm(EMPTY);
+    setNa({
+      client_name: false,
+      phone_number: false,
+      date: false,
+      date_promised: false,
+      instructions: false,
+      price: false,
+    });
     setImageUrl(null);
     setOcrState("idle");
     setOcrText("");
@@ -260,85 +280,181 @@ export function AddRecord() {
       )}
 
       <form action={formAction} className={styles.form}>
-        <input type="hidden" name="client_name" value={form.client_name} />
-        <input type="hidden" name="phone_number" value={form.phone_number} />
-        <input type="hidden" name="date" value={form.date} />
-        <input type="hidden" name="date_promised" value={form.date_promised} />
-        <input type="hidden" name="instructions" value={form.instructions} />
-        <input type="hidden" name="price" value={form.price} />
+        <input
+          type="hidden"
+          name="client_name"
+          value={na.client_name ? "N/A" : form.client_name}
+        />
+        <input
+          type="hidden"
+          name="phone_number"
+          value={na.phone_number ? "N/A" : form.phone_number}
+        />
+        <input
+          type="hidden"
+          name="date"
+          value={na.date ? "N/A" : form.date}
+        />
+        <input
+          type="hidden"
+          name="date_promised"
+          value={na.date_promised ? "N/A" : form.date_promised}
+        />
+        <input
+          type="hidden"
+          name="instructions"
+          value={na.instructions ? "N/A" : form.instructions}
+        />
+        <input
+          type="hidden"
+          name="price"
+          value={na.price ? "" : form.price}
+        />
 
         <div className={styles.fields}>
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Client name</span>
+            <span className={styles.fieldHead}>
+              <span className={styles.fieldLabel}>Client name</span>
+              <span className={styles.naTick}>
+                <input
+                  type="checkbox"
+                  checked={na.client_name}
+                  onChange={() => toggleNa("client_name")}
+                />
+                N/A
+              </span>
+            </span>
             <input
               type="text"
-              value={form.client_name}
+              value={na.client_name ? "" : form.client_name}
               onChange={(e) => set("client_name", e.target.value)}
-              required
+              required={!na.client_name}
+              disabled={na.client_name}
               autoComplete="off"
-              placeholder="e.g. Margaret Ellison"
+              placeholder={na.client_name ? "N/A" : "e.g. Margaret Ellison"}
               className={styles.input}
             />
           </label>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Phone number</span>
+            <span className={styles.fieldHead}>
+              <span className={styles.fieldLabel}>Phone number</span>
+              <span className={styles.naTick}>
+                <input
+                  type="checkbox"
+                  checked={na.phone_number}
+                  onChange={() => toggleNa("phone_number")}
+                />
+                N/A
+              </span>
+            </span>
             <input
               type="tel"
-              value={form.phone_number}
+              value={na.phone_number ? "" : form.phone_number}
               onChange={(e) => set("phone_number", e.target.value)}
+              disabled={na.phone_number}
               autoComplete="off"
-              placeholder="e.g. 214-555-0137"
+              placeholder={
+                na.phone_number ? "N/A" : "e.g. 214-555-0137"
+              }
               className={styles.input}
             />
           </label>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Date</span>
+            <span className={styles.fieldHead}>
+              <span className={styles.fieldLabel}>Date</span>
+              <span className={styles.naTick}>
+                <input
+                  type="checkbox"
+                  checked={na.date}
+                  onChange={() => toggleNa("date")}
+                />
+                N/A
+              </span>
+            </span>
             <input
               type="text"
               inputMode="numeric"
-              value={form.date}
+              value={na.date ? "" : form.date}
               onChange={(e) => set("date", e.target.value)}
-              placeholder="YYYY-MM-DD"
+              disabled={na.date}
+              placeholder={na.date ? "N/A" : "YYYY-MM-DD"}
               className={styles.input}
             />
           </label>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Date promised</span>
+            <span className={styles.fieldHead}>
+              <span className={styles.fieldLabel}>Date promised</span>
+              <span className={styles.naTick}>
+                <input
+                  type="checkbox"
+                  checked={na.date_promised}
+                  onChange={() => toggleNa("date_promised")}
+                />
+                N/A
+              </span>
+            </span>
             <input
               type="text"
               inputMode="numeric"
-              value={form.date_promised}
+              value={na.date_promised ? "" : form.date_promised}
               onChange={(e) => set("date_promised", e.target.value)}
-              placeholder="YYYY-MM-DD"
+              disabled={na.date_promised}
+              placeholder={na.date_promised ? "N/A" : "YYYY-MM-DD"}
               className={styles.input}
             />
           </label>
 
           <label className={styles.field}>
-            <span className={styles.fieldLabel}>Price</span>
+            <span className={styles.fieldHead}>
+              <span className={styles.fieldLabel}>Price</span>
+              <span className={styles.naTick}>
+                <input
+                  type="checkbox"
+                  checked={na.price}
+                  onChange={() => toggleNa("price")}
+                />
+                N/A
+              </span>
+            </span>
             <input
               type="text"
               inputMode="decimal"
-              value={form.price}
+              value={na.price ? "" : form.price}
               onChange={(e) => set("price", e.target.value)}
+              disabled={na.price}
               autoComplete="off"
-              placeholder="e.g. 125.50"
+              placeholder={na.price ? "N/A" : "e.g. 125.50"}
               className={styles.input}
             />
           </label>
 
           <label className={`${styles.field} ${styles.fieldFull}`}>
-            <span className={styles.fieldLabel}>
-              Instructions / article details
+            <span className={styles.fieldHead}>
+              <span className={styles.fieldLabel}>
+                Instructions / article details
+              </span>
+              <span className={styles.naTick}>
+                <input
+                  type="checkbox"
+                  checked={na.instructions}
+                  onChange={() => toggleNa("instructions")}
+                />
+                N/A
+              </span>
             </span>
             <textarea
-              value={form.instructions}
+              value={na.instructions ? "" : form.instructions}
               onChange={(e) => set("instructions", e.target.value)}
+              disabled={na.instructions}
               rows={4}
-              placeholder="e.g. Ring sizing; reset two stones."
+              placeholder={
+                na.instructions
+                  ? "N/A"
+                  : "e.g. Ring sizing; reset two stones."
+              }
               className={styles.textarea}
             />
           </label>
