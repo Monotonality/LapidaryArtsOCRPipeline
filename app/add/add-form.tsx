@@ -400,134 +400,26 @@ export function AddRecord() {
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Date</span>
-            <div className={`${styles.dateRow} date-wheels`}>
-              <div className={styles.wheelCol} role="group" aria-label="Month" data-wheel-group>
-                <div className={styles.wheel}>
-                  {monthOpts.map((m) => (
-                    <button
-                      type="button"
-                      key={m}
-                      onClick={() =>
-                        setDateFields((d) => ({ ...d, month: String(m) }))
-                      }
-                      className={
-                        Number(dateFields.month) === m
-                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
-                          : styles.wheelItem
-                      }
-                    >
-                      {m.toString().padStart(2, "0")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className={styles.wheelCol} role="group" aria-label="Day" data-wheel-group>
-                <div className={styles.wheel}>
-                  {dayOpts.map((d) => (
-                    <button
-                      type="button"
-                      key={d}
-                      onClick={() =>
-                        setDateFields((f) => ({ ...f, day: String(d) }))
-                      }
-                      className={
-                        Number(dateFields.day) === d
-                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
-                          : styles.wheelItem
-                      }
-                    >
-                      {d.toString().padStart(2, "0")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className={styles.wheelCol} role="group" aria-label="Year" data-wheel-group>
-                <div className={styles.wheel}>
-                  {yearOpts.map((y) => (
-                    <button
-                      type="button"
-                      key={y}
-                      onClick={() =>
-                        setDateFields((f) => ({ ...f, year: String(y) }))
-                      }
-                      className={
-                        Number(dateFields.year) === y
-                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
-                          : styles.wheelItem
-                      }
-                    >
-                      {y}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={form.date}
+              onChange={(e) => set("date", e.target.value)}
+              placeholder="YYYY-MM-DD"
+              className={styles.input}
+            />
           </label>
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Date promised</span>
-            <div className={`${styles.dateRow} promised-wheels`}>
-              <div className={styles.wheelCol} role="group" aria-label="Promised month" data-wheel-group>
-                <div className={styles.wheel}>
-                  {monthOpts.map((m) => (
-                    <button
-                      type="button"
-                      key={m}
-                      onClick={() =>
-                        setPromisedFields((d) => ({ ...d, month: String(m) }))
-                      }
-                      className={
-                        Number(promisedFields.month) === m
-                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
-                          : styles.wheelItem
-                      }
-                    >
-                      {m.toString().padStart(2, "0")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className={styles.wheelCol} role="group" aria-label="Promised day" data-wheel-group>
-                <div className={styles.wheel}>
-                  {dayOpts.map((d) => (
-                    <button
-                      type="button"
-                      key={d}
-                      onClick={() =>
-                        setPromisedFields((f) => ({ ...f, day: String(d) }))
-                      }
-                      className={
-                        Number(promisedFields.day) === d
-                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
-                          : styles.wheelItem
-                      }
-                    >
-                      {d.toString().padStart(2, "0")}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className={styles.wheelCol} role="group" aria-label="Promised year" data-wheel-group>
-                <div className={styles.wheel}>
-                  {yearOpts.map((y) => (
-                    <button
-                      type="button"
-                      key={y}
-                      onClick={() =>
-                        setPromisedFields((f) => ({ ...f, year: String(y) }))
-                      }
-                      className={
-                        Number(promisedFields.year) === y
-                          ? `${styles.wheelItem} ${styles.wheelItemActive}`
-                          : styles.wheelItem
-                      }
-                    >
-                      {y}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={form.date_promised}
+              onChange={(e) => set("date_promised", e.target.value)}
+              placeholder="YYYY-MM-DD"
+              className={styles.input}
+            />
           </label>
 
           <label className={styles.field}>
