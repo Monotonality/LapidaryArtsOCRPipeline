@@ -61,29 +61,54 @@ export function AddRecord() {
   });
 
   useEffect(() => {
-    const m = parseInt(dateFields.month);
-    const d = parseInt(dateFields.day);
-    const y = parseInt(dateFields.year);
-    if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
-      const mm = String(m).padStart(2, "0");
-      const dd = String(d).padStart(2, "0");
-      set("date", `${y}-${mm}-${dd}`);
+    const monthNum = parseInt(dateFields.month);
+    const dayNum = parseInt(dateFields.day);
+    const yearNum = parseInt(dateFields.year);
+    if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && yearNum >= 1900 && yearNum <= 2100) {
+      const mm = String(monthNum).padStart(2, "0");
+      const dd = String(dayNum).padStart(2, "0");
+      set("date", `${yearNum}-${mm}-${dd}`);
     } else if (form.date) {
       set("date", "");
     }
+
+    // auto-scroll active items into view
+    setTimeout(() => {
+      document.querySelectorAll(".date-wheels").forEach((root) => {
+        const groups = root.querySelectorAll("[data-wheel-group]");
+        groups.forEach((g) => {
+          const active = g.querySelector(".active-wheel");
+          if (active) {
+            active.scrollIntoView({ block: "center", behavior: "auto" });
+          }
+        });
+      });
+    }, 0);
   }, [dateFields, form.date]);
 
   useEffect(() => {
-    const m = parseInt(promisedFields.month);
-    const d = parseInt(promisedFields.day);
-    const y = parseInt(promisedFields.year);
-    if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
-      const mm = String(m).padStart(2, "0");
-      const dd = String(d).padStart(2, "0");
-      set("date_promised", `${y}-${mm}-${dd}`);
+    const monthNum = parseInt(promisedFields.month);
+    const dayNum = parseInt(promisedFields.day);
+    const yearNum = parseInt(promisedFields.year);
+    if (monthNum >= 1 && monthNum <= 12 && dayNum >= 1 && dayNum <= 31 && yearNum >= 1900 && yearNum <= 2100) {
+      const mm = String(monthNum).padStart(2, "0");
+      const dd = String(dayNum).padStart(2, "0");
+      set("date_promised", `${yearNum}-${mm}-${dd}`);
     } else if (form.date_promised) {
       set("date_promised", "");
     }
+
+    setTimeout(() => {
+      document.querySelectorAll(".promised-wheels").forEach((root) => {
+        const groups = root.querySelectorAll("[data-wheel-group]");
+        groups.forEach((g) => {
+          const active = g.querySelector(".active-wheel");
+          if (active) {
+            active.scrollIntoView({ block: "center", behavior: "auto" });
+          }
+        });
+      });
+    }, 0);
   }, [promisedFields, form.date_promised]);
 
   const monthOpts = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -375,8 +400,8 @@ export function AddRecord() {
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Date</span>
-            <div className={styles.dateRow}>
-              <div className={styles.wheelCol} role="group" aria-label="Month">
+            <div className={`${styles.dateRow} date-wheels`}>
+              <div className={styles.wheelCol} role="group" aria-label="Month" data-wheel-group>
                 <div className={styles.wheel}>
                   {monthOpts.map((m) => (
                     <button
@@ -396,7 +421,7 @@ export function AddRecord() {
                   ))}
                 </div>
               </div>
-              <div className={styles.wheelCol} role="group" aria-label="Day">
+              <div className={styles.wheelCol} role="group" aria-label="Day" data-wheel-group>
                 <div className={styles.wheel}>
                   {dayOpts.map((d) => (
                     <button
@@ -416,7 +441,7 @@ export function AddRecord() {
                   ))}
                 </div>
               </div>
-              <div className={styles.wheelCol} role="group" aria-label="Year">
+              <div className={styles.wheelCol} role="group" aria-label="Year" data-wheel-group>
                 <div className={styles.wheel}>
                   {yearOpts.map((y) => (
                     <button
@@ -441,8 +466,8 @@ export function AddRecord() {
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Date promised</span>
-            <div className={styles.dateRow}>
-              <div className={styles.wheelCol} role="group" aria-label="Promised month">
+            <div className={`${styles.dateRow} promised-wheels`}>
+              <div className={styles.wheelCol} role="group" aria-label="Promised month" data-wheel-group>
                 <div className={styles.wheel}>
                   {monthOpts.map((m) => (
                     <button
@@ -462,7 +487,7 @@ export function AddRecord() {
                   ))}
                 </div>
               </div>
-              <div className={styles.wheelCol} role="group" aria-label="Promised day">
+              <div className={styles.wheelCol} role="group" aria-label="Promised day" data-wheel-group>
                 <div className={styles.wheel}>
                   {dayOpts.map((d) => (
                     <button
@@ -482,7 +507,7 @@ export function AddRecord() {
                   ))}
                 </div>
               </div>
-              <div className={styles.wheelCol} role="group" aria-label="Promised year">
+              <div className={styles.wheelCol} role="group" aria-label="Promised year" data-wheel-group>
                 <div className={styles.wheel}>
                   {yearOpts.map((y) => (
                     <button
