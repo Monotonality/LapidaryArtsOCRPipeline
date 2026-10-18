@@ -127,17 +127,6 @@ export function AddRecord() {
 
   function clearAll() {
     setForm(EMPTY);
-    const now2 = new Date();
-    setDateFields({
-      month: String(now2.getMonth() + 1),
-      day: String(now2.getDate()),
-      year: String(now2.getFullYear()),
-    });
-    setPromisedFields({
-      month: String(now2.getMonth() + 1),
-      day: String(now2.getDate()),
-      year: String(now2.getFullYear()),
-    });
     setImageUrl(null);
     setOcrState("idle");
     setOcrText("");
@@ -216,26 +205,6 @@ export function AddRecord() {
         price: parsed.price || f.price,
         instructions: parsed.instructions || f.instructions,
       }));
-      if (parsed.date) {
-        const d = new Date(`${parsed.date}T00:00:00`);
-        if (!Number.isNaN(d.getTime())) {
-          setDateFields({
-            month: String(d.getMonth() + 1),
-            day: String(d.getDate()),
-            year: String(d.getFullYear()),
-          });
-        }
-      }
-      if (parsed.date_promised) {
-        const d = new Date(`${parsed.date_promised}T00:00:00`);
-        if (!Number.isNaN(d.getTime())) {
-          setPromisedFields({
-            month: String(d.getMonth() + 1),
-            day: String(d.getDate()),
-            year: String(d.getFullYear()),
-          });
-        }
-      }
       setOcrText(text.trim());
       setOcrState("done");
       setOcrNote(
