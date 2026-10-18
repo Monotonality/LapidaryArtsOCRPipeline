@@ -3,11 +3,10 @@ type OcrResult = Array<{ generated_text: string }>;
 
 export type OcrModelKind = "handwritten" | "printed";
 
-export type OcrModelProgress = {
+type OcrModelProgress = {
   file: string;
   loaded: number;
   total: number;
-  progress: number;
 };
 
 export type OcrProgressHandler = (p: OcrModelProgress) => void;
@@ -42,7 +41,6 @@ function loadTranscriber(
         file?: string;
         loaded?: number;
         total?: number;
-        progress?: number;
       }) => {
         if (
           !onProgress ||
@@ -56,9 +54,6 @@ function loadTranscriber(
           file: update.file ?? "",
           loaded: update.loaded,
           total: update.total,
-          progress:
-            update.progress ??
-            (update.total > 0 ? update.loaded / update.total : 0),
         });
       },
     })) as Transcriber;
@@ -113,7 +108,7 @@ function toIsoDate(raw: string): string {
   return "";
 }
 
-export type ParsedRecord = {
+type ParsedRecord = {
   client_name: string;
   phone_number: string;
   date: string;

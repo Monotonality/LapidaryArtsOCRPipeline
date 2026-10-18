@@ -12,13 +12,11 @@
 
 :root {
   /* ---- Neutrals ---- */
-  --gray-50: #fafafa;
   --gray-100: #f6f7f8;
   --gray-200: #eef0f2;
   --gray-300: #e4e6ea;
   --gray-400: #c9ccd2;
   --gray-500: #8a8d94;
-  --gray-600: #6b6e75;
   --gray-700: #4b4d52;
   --gray-800: #2a2a2e;
   --gray-900: #111113;
@@ -33,8 +31,6 @@
 
   /* ---- Purple: model output ---- */
   --purple-50: #f1ecfc;
-  --purple-200: #d8cbf6;
-  --purple-500: #7c3ee8;
   --purple-600: #6d28d9;
   --purple-700: #5b1eb8;
 
@@ -63,15 +59,11 @@
   /* green = the commit action / verified state */
   --green: var(--green-600);
   --green-hover: var(--green-700);
-  --green-soft: var(--green-50);
-  --green-border: var(--green-200);
   --on-green: #ffffff;
 
   /* purple = model output pending confirmation */
   --purple: var(--purple-600);
-  --purple-hover: var(--purple-700);
   --purple-soft: var(--purple-50);
-  --purple-border: var(--purple-200);
   --on-purple: #ffffff;
 
   --success: var(--green-600);
@@ -100,8 +92,6 @@
   /* ---- Elevation: borders, not shadows ---- */
   --shadow-xs: none;
   --shadow-sm: none;
-  --shadow-md: none;
-  --shadow-lg: none;
 
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 
@@ -132,14 +122,10 @@
 
     --green: #2fa36b;
     --green-hover: #3db87c;
-    --green-soft: #12281e;
-    --green-border: #1f4534;
     --on-green: #06110b;
 
     --purple: #8b5cf6;
-    --purple-hover: #9d75f8;
     --purple-soft: #201838;
-    --purple-border: #3b2c6b;
     --on-purple: #0d0619;
 
     --success: #2fa36b;

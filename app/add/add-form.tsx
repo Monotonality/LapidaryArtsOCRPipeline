@@ -12,7 +12,7 @@ import {
 import styles from "./add.module.css";
 
 type Mode = "form" | "photo";
-type OcrState = "idle" | "model" | "reading" | "done" | "error";
+type OcrState = "idle" | "reading" | "done" | "error";
 
 type RecordFields = {
   client_name: string;
@@ -204,7 +204,7 @@ export function AddRecord() {
                     onChange={(e) =>
                       setModel(e.target.value as OcrModelKind)
                     }
-                    disabled={ocrState === "reading" || ocrState === "model"}
+                    disabled={ocrState === "reading"}
                     className={styles.select}
                   >
                     <option value="handwritten">Handwritten</option>
@@ -214,14 +214,10 @@ export function AddRecord() {
                 <button
                   type="button"
                   onClick={handleOcr}
-                  disabled={ocrState === "reading" || ocrState === "model"}
+                  disabled={ocrState === "reading"}
                   className={styles.ocrButton}
                 >
-                  {ocrState === "reading"
-                    ? "Reading…"
-                    : ocrState === "model"
-                      ? "Preparing…"
-                      : "Read card"}
+                  {ocrState === "reading" ? "Reading…" : "Read card"}
                 </button>
                 <button
                   type="button"

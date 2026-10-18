@@ -275,28 +275,6 @@
   cursor: default;
 }
 
-.link {
-  color: var(--text);
-  font-size: 0.875rem;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-  transition: color 120ms var(--ease);
-}
-
-.link:hover {
-  color: var(--text-muted);
-}
-
-.linkRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
-  font-size: 0.875rem;
-  margin-top: var(--space-1);
-}
-
 /* ---- Alerts ---- */
 .alert {
   display: flex;
@@ -344,16 +322,6 @@
   font-family: var(--font-mono, monospace);
   opacity: 0.7;
   display: block;
-}
-
-.footer {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  text-align: center;
-}
-
-.footer .link {
-  font-weight: 500;
 }
 
 /* ============================================================
