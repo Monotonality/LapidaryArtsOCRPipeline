@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { createRecord } from "./actions";
 import {
   runOcr,
@@ -46,6 +46,51 @@ export function AddRecord() {
   const fileRef = useRef<HTMLInputElement>(null);
   const readStartedRef = useRef(false);
 
+  const now = new Date();
+  const todayIso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  const [dateFields, setDateFields] = useState({
+    month: String(now.getMonth() + 1),
+    day: String(now.getDate()),
+    year: String(now.getFullYear()),
+  });
+  const [promisedFields, setPromisedFields] = useState({
+    month: String(now.getMonth() + 1),
+    day: String(now.getDate()),
+    year: String(now.getFullYear()),
+  });
+
+  useEffect(() => {
+    const m = parseInt(dateFields.month);
+    const d = parseInt(dateFields.day);
+    const y = parseInt(dateFields.year);
+    if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
+      const mm = String(m).padStart(2, "0");
+      const dd = String(d).padStart(2, "0");
+      set("date", `${y}-${mm}-${dd}`);
+    } else if (form.date) {
+      set("date", "");
+    }
+  }, [dateFields, form.date]);
+
+  useEffect(() => {
+    const m = parseInt(promisedFields.month);
+    const d = parseInt(promisedFields.day);
+    const y = parseInt(promisedFields.year);
+    if (m >= 1 && m <= 12 && d >= 1 && d <= 31 && y >= 1900 && y <= 2100) {
+      const mm = String(m).padStart(2, "0");
+      const dd = String(d).padStart(2, "0");
+      set("date_promised", `${y}-${mm}-${dd}`);
+    } else if (form.date_promised) {
+      set("date_promised", "");
+    }
+  }, [promisedFields, form.date_promised]);
+
+  const monthOpts = Array.from({ length: 12 }, (_, i) => i + 1);
+  const dayOpts = Array.from({ length: 31 }, (_, i) => i + 1);
+  const currentYear = new Date().getFullYear();
+  const yearOpts = Array.from({ length: 121 }, (_, i) => currentYear + 20 - i);
+
   const handleModelProgress: OcrProgressHandler = ({ file, loaded, total }) => {
     const pct = Math.round((loaded / total) * 100);
     setOcrNote(`Downloading ${file}: ${pct}% (one-time)`);
@@ -57,6 +102,17 @@ export function AddRecord() {
 
   function clearAll() {
     setForm(EMPTY);
+    const now2 = new Date();
+    setDateFields({
+      month: String(now2.getMonth() + 1),
+      day: String(now2.getDate()),
+      year: String(now2.getFullYear()),
+    });
+    setPromisedFields({
+      month: String(now2.getMonth() + 1),
+      day: String(now2.getDate()),
+      year: String(now2.getFullYear()),
+    });
     setImageUrl(null);
     setOcrState("idle");
     setOcrText("");
@@ -135,6 +191,26 @@ export function AddRecord() {
         price: parsed.price || f.price,
         instructions: parsed.instructions || f.instructions,
       }));
+      if (parsed.date) {
+        const d = new Date(`${parsed.date}T00:00:00`);
+        if (!Number.isNaN(d.getTime())) {
+          setDateFields({
+            month: String(d.getMonth() + 1),
+            day: String(d.getDate()),
+            year: String(d.getFullYear()),
+          });
+        }
+      }
+      if (parsed.date_promised) {
+        const d = new Date(`${parsed.date_promised}T00:00:00`);
+        if (!Number.isNaN(d.getTime())) {
+          setPromisedFields({
+            month: String(d.getMonth() + 1),
+            day: String(d.getDate()),
+            year: String(d.getFullYear()),
+          });
+        }
+      }
       setOcrText(text.trim());
       setOcrState("done");
       setOcrNote(
@@ -299,22 +375,98 @@ export function AddRecord() {
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Date</span>
-            <input
-              type="date"
-              value={form.date}
-              onChange={(e) => set("date", e.target.value)}
-              className={styles.input}
-            />
+            <div className={styles.dateRow}>
+              <select
+                aria-label="Month"
+                value={dateFields.month}
+                onChange={(e) =>
+                  setDateFields((d) => ({ ...d, month: e.target.value }))
+                }
+                className={styles.select}
+              >
+                {monthOpts.map((m) => (
+                  <option key={m} value={m}>
+                    {m.toString().padStart(2, "0")}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Day"
+                value={dateFields.day}
+                onChange={(e) =>
+                  setDateFields((d) => ({ ...d, day: e.target.value }))
+                }
+                className={styles.select}
+              >
+                {dayOpts.map((d) => (
+                  <option key={d} value={d}>
+                    {d.toString().padStart(2, "0")}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Year"
+                value={dateFields.year}
+                onChange={(e) =>
+                  setDateFields((d) => ({ ...d, year: e.target.value }))
+                }
+                className={styles.select}
+              >
+                {yearOpts.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
           </label>
 
           <label className={styles.field}>
             <span className={styles.fieldLabel}>Date promised</span>
-            <input
-              type="date"
-              value={form.date_promised}
-              onChange={(e) => set("date_promised", e.target.value)}
-              className={styles.input}
-            />
+            <div className={styles.dateRow}>
+              <select
+                aria-label="Promised month"
+                value={promisedFields.month}
+                onChange={(e) =>
+                  setPromisedFields((d) => ({ ...d, month: e.target.value }))
+                }
+                className={styles.select}
+              >
+                {monthOpts.map((m) => (
+                  <option key={m} value={m}>
+                    {m.toString().padStart(2, "0")}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Promised day"
+                value={promisedFields.day}
+                onChange={(e) =>
+                  setPromisedFields((d) => ({ ...d, day: e.target.value }))
+                }
+                className={styles.select}
+              >
+                {dayOpts.map((d) => (
+                  <option key={d} value={d}>
+                    {d.toString().padStart(2, "0")}
+                  </option>
+                ))}
+              </select>
+              <select
+                aria-label="Promised year"
+                value={promisedFields.year}
+                onChange={(e) =>
+                  setPromisedFields((d) => ({ ...d, year: e.target.value }))
+                }
+                className={styles.select}
+              >
+                {yearOpts.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            </div>
           </label>
 
           <label className={styles.field}>
