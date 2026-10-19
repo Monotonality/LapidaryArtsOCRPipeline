@@ -5,14 +5,6 @@ import { FIELD_KEYS, validateFields, type CheckedFields } from "./reader";
 import { checkOpenRouter, readWithOpenRouter, type OpenRouterStatus } from "./openrouter";
 import styles from "./add.module.css";
 
-export type Evidence = {
-  raw: string;
-  suggestion?: string;
-  acceptValue?: string;
-  confidence?: "high" | "low";
-  reason?: string | null;
-};
-
 export function PhotoReader({
   onPhotoChange,
   onModel,
@@ -92,8 +84,8 @@ export function PhotoReader({
       const checked = validateFields(result.fields);
       onModel(checked);
       setSeconds(result.seconds);
-      const filled = FIELD_KEYS.filter((key) => Boolean(checked[key].filledValue)).length;
-      setNote(`AI reader finished in ${result.seconds.toFixed(1)}s. ${filled} of 6 fields passed auto-fill checks; review suggestions below.`);
+      const filled = FIELD_KEYS.filter((key) => Boolean(checked[key].reviewValue)).length;
+      setNote(`AI reader finished in ${result.seconds.toFixed(1)}s. ${filled} of 6 fields filled from the photo; check them against the photo before saving.`);
     } catch (err) {
       if (!alive.current) return;
       if (controller.signal.aborted) {

@@ -3,12 +3,11 @@
 import { useActionState, useState } from "react";
 import { createRecord } from "./actions";
 import { FIELD_KEYS, type FieldKey, type CheckedFields } from "./reader";
-import { PhotoReader, type Evidence } from "./photo-reader";
+import { PhotoReader } from "./photo-reader";
 import styles from "./add.module.css";
 
 type Mode = "form" | "photo";
 type RecordFields = Record<FieldKey, string>;
-type EvidenceMap = Partial<Record<FieldKey, Evidence>>;
 type NaMap = Record<FieldKey, boolean>;
 
 const EMPTY: RecordFields = {
@@ -20,31 +19,10 @@ const NO_NA: NaMap = {
   date_promised: false, instructions: false, price: false,
 };
 
-function FieldSource({ source, onAccept }: { source?: Evidence; onAccept?: () => void }) {
-  if (!source) return null;
-  return (
-    <div className={styles.fieldSource}>
-      <span>
-        {source.suggestion ? (
-          <>
-            <strong>Model suggestion:</strong> {source.suggestion}<br />
-            <strong>Evidence:</strong> {source.raw || "None"}<br />
-            {source.confidence && <><strong>Confidence:</strong> {source.confidence} · </>}{source.reason ?? "Filled for review"}
-          </>
-        ) : <>Read: {source.raw || "No text recognized"}</>}
-      </span>
-      {source.suggestion && source.reason && source.acceptValue && onAccept && (
-        <button type="button" onClick={onAccept} className={styles.suggestionButton}>Use suggestion</button>
-      )}
-    </div>
-  );
-}
-
 export function AddRecord({ demo = false }: { demo?: boolean }) {
   const [mode, setMode] = useState<Mode>("form");
   const [form, setForm] = useState<RecordFields>(EMPTY);
   const [na, setNa] = useState<NaMap>(NO_NA);
-  const [evidence, setEvidence] = useState<EvidenceMap>({});
   const [edited, setEdited] = useState<Set<FieldKey>>(new Set());
   const [reviewed, setReviewed] = useState(false);
   const [hasPhoto, setHasPhoto] = useState(false);
@@ -65,7 +43,6 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
   function clearAll() {
     setForm(EMPTY);
     setNa(NO_NA);
-    setEvidence({});
     setEdited(new Set());
     setReviewed(false);
     setHasPhoto(false);
@@ -73,45 +50,20 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
   }
 
   function applyModel(fields: CheckedFields) {
-    setEvidence((current) => {
-      const next = { ...current };
-      for (const key of FIELD_KEYS) {
-        if (edited.has(key)) continue;
-        const item = fields[key];
-        next[key] = {
-          raw: item.evidence ?? "",
-          suggestion: item.value ?? undefined,
-          acceptValue: item.reviewValue ?? undefined,
-          confidence: item.confidence,
-          reason: item.reason,
-        };
-      }
-      return next;
-    });
     setForm((current) => {
       const next = { ...current };
       for (const key of FIELD_KEYS) {
-        if (!edited.has(key)) next[key] = fields[key].filledValue ?? "";
+        if (!edited.has(key)) next[key] = fields[key].reviewValue ?? "";
       }
       return next;
     });
     setNa((current) => {
       const next = { ...current };
       for (const key of FIELD_KEYS) {
-        if (!edited.has(key) && fields[key].filledValue) next[key] = false;
+        if (!edited.has(key) && fields[key].reviewValue) next[key] = false;
       }
       return next;
     });
-    setReviewed(false);
-  }
-
-  function acceptSuggestion(key: FieldKey) {
-    const source = evidence[key];
-    if (!source?.acceptValue) return;
-    setForm((current) => ({ ...current, [key]: source.acceptValue! }));
-    setEvidence((current) => ({ ...current, [key]: { ...source, reason: null } }));
-    setEdited((current) => new Set(current).add(key));
-    setNa((current) => ({ ...current, [key]: false }));
     setReviewed(false);
   }
 
@@ -128,7 +80,7 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
         <PhotoReader
           key={photoKey}
           onPhotoChange={(selected) => {
-            setHasPhoto(selected); setForm(EMPTY); setNa(NO_NA); setEvidence({}); setEdited(new Set()); setReviewed(false);
+            setHasPhoto(selected); setForm(EMPTY); setNa(NO_NA); setEdited(new Set()); setReviewed(false);
           }}
           onModel={applyModel}
           demo={demo}
@@ -153,7 +105,6 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
             <input name="client_name" type="text" value={na.client_name ? "" : form.client_name} onChange={(event) => set("client_name", event.target.value)}
               required={!na.client_name} disabled={na.client_name} autoComplete="off"
               placeholder={na.client_name ? "N/A" : "e.g. Margaret Ellison"} className={styles.input} />
-            <FieldSource source={evidence.client_name} onAccept={() => acceptSuggestion("client_name")} />
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
@@ -166,7 +117,6 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
             <input name="phone_number" type="tel" value={na.phone_number ? "" : form.phone_number} onChange={(event) => set("phone_number", event.target.value)}
               disabled={na.phone_number} autoComplete="off"
               placeholder={na.phone_number ? "N/A" : "e.g. 214-555-0137"} className={styles.input} />
-            <FieldSource source={evidence.phone_number} onAccept={() => acceptSuggestion("phone_number")} />
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
@@ -178,7 +128,6 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
             </span>
             <input name="date" type="date" value={na.date ? "" : form.date} onChange={(event) => set("date", event.target.value)}
               disabled={na.date} className={styles.input} />
-            <FieldSource source={evidence.date} onAccept={() => acceptSuggestion("date")} />
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
@@ -190,7 +139,6 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
             </span>
             <input name="date_promised" type="date" value={na.date_promised ? "" : form.date_promised} onChange={(event) => set("date_promised", event.target.value)}
               disabled={na.date_promised} className={styles.input} />
-            <FieldSource source={evidence.date_promised} onAccept={() => acceptSuggestion("date_promised")} />
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
@@ -203,7 +151,6 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
             <input name="price" type="text" inputMode="decimal" value={na.price ? "" : form.price} onChange={(event) => set("price", event.target.value)}
               disabled={na.price} autoComplete="off"
               placeholder={na.price ? "N/A" : "e.g. 125.50"} className={styles.input} />
-            <FieldSource source={evidence.price} onAccept={() => acceptSuggestion("price")} />
           </label>
           <label className={`${styles.field} ${styles.fieldFull}`}>
             <span className={styles.fieldHead}>
@@ -216,7 +163,6 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
             <textarea name="instructions" value={na.instructions ? "" : form.instructions} onChange={(event) => set("instructions", event.target.value)}
               disabled={na.instructions} rows={4}
               placeholder={na.instructions ? "N/A" : "e.g. Ring sizing; reset two stones."} className={styles.textarea} />
-            <FieldSource source={evidence.instructions} onAccept={() => acceptSuggestion("instructions")} />
           </label>
         </div>
 
