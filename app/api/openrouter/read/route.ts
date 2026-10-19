@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const DEFAULT_MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
+const DEFAULT_MODEL = "qwen/qwen3.8-omni-flash";
 const IMAGE_PATTERN = /^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/;
 
 function model() {

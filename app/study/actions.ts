@@ -276,7 +276,7 @@ export async function extractStudyFields(
     return { error: "No card image was provided for extraction." };
   }
 
-  const model = process.env.OPENROUTER_MODEL || "qwen/qwen3.7-flash";
+  const model = process.env.OPENROUTER_MODEL || "qwen/qwen3.8-omni-flash";
 
   let res: Response;
   try {
