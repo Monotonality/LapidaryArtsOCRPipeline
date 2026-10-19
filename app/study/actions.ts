@@ -299,6 +299,7 @@ export async function extractStudyFields(
             ],
           },
         ],
+        reasoning: { effort: "low" },
       }),
     });
   } catch (err) {

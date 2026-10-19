@@ -76,6 +76,8 @@ export async function POST(request: NextRequest) {
           ] },
         ],
         max_tokens: 8192,
+        // Reasoning models can otherwise spend the whole token budget thinking and return no JSON.
+        reasoning: { effort: "low" },
         temperature: 1,
         top_p: 0.95,
       }),
