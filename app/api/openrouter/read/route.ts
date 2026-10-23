@@ -76,8 +76,9 @@ export async function POST(request: NextRequest) {
           ] },
         ],
         max_tokens: 8192,
-        // Reasoning models can otherwise spend the whole token budget thinking and return no JSON.
-        reasoning: { effort: "low" },
+        // Reasoning tokens are billed as output. On a 16-card eval, reasoning off matched the
+        // 512-token reasoning budget's accuracy at ~380 output tokens instead of ~880, in half the time.
+        reasoning: { enabled: false },
         temperature: 1,
         top_p: 0.95,
       }),
