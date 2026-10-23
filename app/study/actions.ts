@@ -252,12 +252,29 @@ export async function createStudyArchive(
 const EXTRACTION_PROMPT = `You are transcribing a handwritten jewelry repair/job card photograph.
 Extract exactly these six fields: client_name, phone_number, date, date_promised, instructions, price.
 Rules:
-- phone_number: digits only, keep formatting marks that appear on the card.
+- phone_number: the handwritten customer phone, keep formatting marks that appear on the card. Never add an area code that is not written. The printed store phone 972-964-1090 is never the customer phone.
+- date is the handwritten DATE RECEIVED box; date_promised is only the DATE PROMISED box, which is often blank. Ignore "called <date>" notes.
 - date and date_promised: YYYY-MM-DD when a full date is visible; empty string otherwise.
 - price: numbers only, no currency symbol.
 - instructions: the article/repair details, joined with "; " if multiple lines.
 - Use an empty string for any field you cannot read confidently.
 Respond with ONLY a JSON object of the six fields, no prose, no markdown fence.`;
+
+const EXTRACTION_KEYS = [
+  "client_name",
+  "phone_number",
+  "date",
+  "date_promised",
+  "instructions",
+  "price",
+] as const;
+
+const EXTRACTION_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: Object.fromEntries(EXTRACTION_KEYS.map((key) => [key, { type: "string" }])),
+  required: [...EXTRACTION_KEYS],
+};
 
 export async function extractStudyFields(
   _prev: ExtractState,
@@ -276,7 +293,7 @@ export async function extractStudyFields(
     return { error: "No card image was provided for extraction." };
   }
 
-  const model = process.env.OPENROUTER_MODEL || "qwen/qwen3.7-flash";
+  const model = process.env.OPENROUTER_MODEL || "qwen/qwen3.8-omni-flash";
 
   let res: Response;
   try {
@@ -299,7 +316,13 @@ export async function extractStudyFields(
             ],
           },
         ],
-        reasoning: { effort: "low" },
+        // Without reasoning the layout rules above keep Date Received out of date_promised,
+        // and the schema stops stray text around the JSON.
+        reasoning: { enabled: false },
+        response_format: {
+          type: "json_schema",
+          json_schema: { name: "study_fields", strict: true, schema: EXTRACTION_SCHEMA },
+        },
       }),
     });
   } catch (err) {

@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const DEFAULT_MODEL = "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free";
+const DEFAULT_MODEL = "qwen/qwen3.8-omni-flash";
 const IMAGE_PATTERN = /^data:image\/jpeg;base64,([A-Za-z0-9+/]+={0,2})$/;
 
 function model() {
@@ -76,8 +76,9 @@ export async function POST(request: NextRequest) {
           ] },
         ],
         max_tokens: 8192,
-        // Reasoning models can otherwise spend the whole token budget thinking and return no JSON.
-        reasoning: { effort: "low" },
+        // Reasoning tokens are billed as output. On a 16-card eval, reasoning off matched the
+        // 512-token reasoning budget's accuracy at ~380 output tokens instead of ~880, in half the time.
+        reasoning: { enabled: false },
         temperature: 1,
         top_p: 0.95,
       }),

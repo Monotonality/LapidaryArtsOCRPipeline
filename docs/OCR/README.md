@@ -20,7 +20,7 @@ column. The printed ticket number is not saved as a field.
 1. Copy [`.env.example`](../../.env.example) to `.env.local` at the repository
    root. Set `OPENROUTER_API_KEY` there. `.env.local` is ignored by Git; do not
    use a `NEXT_PUBLIC_` prefix for this key.
-2. Set `OPENROUTER_MODEL` (e.g. `google/gemma-4-31b-it:free` or `nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free`). Restart the Next.js server after
+2. Set `OPENROUTER_MODEL` (production uses `qwen/qwen3.8-omni-flash`). Restart the Next.js server after
    changing environment variables.
 3. Run `npm run dev`. Open `/ocr-demo` for a local reader test without Supabase.
    The normal `/add` page requires a Supabase session. For a deployment, set
