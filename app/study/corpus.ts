@@ -32,7 +32,12 @@ export function nextUncompleted(completed: Iterable<string>): string | null {
   return null;
 }
 
-/** URL of the prepared JPG for a corpus record (see scripts/prepare-corpus.mjs). */
+/**
+ * URL of a corpus record's JPG. Images live in a private Supabase Storage
+ * bucket (see scripts/prepare-corpus.mjs and scripts/upload-corpus.mjs) and
+ * are served through an authenticated, same-origin route so the browser canvas
+ * used by OCR is not tainted.
+ */
 export function corpusImageUrl(label: string): string {
-  return `/corpus/${label}.jpg`;
+  return `/api/corpus/${encodeURIComponent(label)}`;
 }

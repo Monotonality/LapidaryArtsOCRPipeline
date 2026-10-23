@@ -10,7 +10,7 @@
 *.tsbuildinfo
 /public/ocr-fixtures/
 
-# Prepared study corpus images (regenerate with scripts/prepare-corpus.mjs)
+# Prepared study corpus images (prepare locally, then upload to Supabase Storage)
 /public/corpus/
 
 # Source photo corpora (large binaries, kept local)

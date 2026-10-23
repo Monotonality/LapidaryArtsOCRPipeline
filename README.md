@@ -72,11 +72,25 @@ are never exposed to client components.
 ### Scripts
 
 ```bash
-npm run dev      # local dev (http://localhost:3000)
-npm run build    # production build
-npm run start    # serve a production build
-npx tsc --noEmit # typecheck
+npm run dev            # local dev (http://localhost:3000)
+npm run build          # production build
+npm run start          # serve a production build
+npx tsc --noEmit       # typecheck
+npm run corpus:prepare # convert 258JpgCorpus into public/corpus
+npm run corpus:upload  # upload public/corpus to Supabase Storage
 ```
+
+### Study corpus images
+
+The 258 study photos are **not** committed. They are converted locally into
+`public/corpus/` (gitignored), then uploaded to the private Supabase Storage
+bucket `study-corpus` (override with `CORPUS_BUCKET`). Production serves them
+through `/api/corpus/<label>`, which checks the signed-in user before streaming
+the image from Storage. Local development reads `public/corpus/` directly.
+
+Run `npm run corpus:prepare` and `npm run corpus:upload` whenever the corpus
+changes. `corpus:upload` skips files already in the bucket; pass `-- --force` to
+re-upload everything.
 
 Without Supabase credentials, open `http://localhost:3000/ocr-demo` in development
 to test the photo reader and review form.

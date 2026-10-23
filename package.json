@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "corpus:prepare": "node scripts/prepare-corpus.mjs",
+    "corpus:upload": "node scripts/upload-corpus.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

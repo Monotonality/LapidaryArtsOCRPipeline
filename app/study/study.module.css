@@ -158,6 +158,15 @@
   gap: var(--space-2);
 }
 
+.photoWrap {
+  position: relative;
+  display: flex;
+}
+
+.photoWrapLoading {
+  min-height: 18rem;
+}
+
 .photo {
   width: 100%;
   max-height: 36rem;
@@ -165,6 +174,20 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
+}
+
+.photoLoading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: var(--surface-muted);
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
 }
 
 .photoPlaceholder {

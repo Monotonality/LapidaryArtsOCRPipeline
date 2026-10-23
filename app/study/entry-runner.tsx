@@ -103,9 +103,10 @@ export function EntryRunner({
   const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
   const [na, setNa] = useState<Record<keyof Fields, boolean>>(EMPTY_NA);
   const [modelFields, setModelFields] = useState<Set<string>>(new Set());
-  const [openedAtMs, setOpenedAtMs] = useState<number>(() => Date.now());
+  const [openedAtMs, setOpenedAtMs] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [photoMissing, setPhotoMissing] = useState(false);
+  const [loadedLabel, setLoadedLabel] = useState<string | null>(null);
   const [hadPriorEntry, setHadPriorEntry] = useState(false);
   const [busy, setBusy] = useState(false);
   const [ocrNote, setOcrNote] = useState("");
@@ -121,8 +122,14 @@ export function EntryRunner({
   );
   const handledSaveRef = useRef<number | null>(null);
 
-  // Timer ticks while the current record is open.
+  const photoReady = label !== null && loadedLabel === label;
+
+  // Timer ticks only after the photo for this record has finished loading.
   useEffect(() => {
+    if (openedAtMs === null) {
+      setElapsed(0);
+      return;
+    }
     setElapsed(Date.now() - openedAtMs);
     const id = setInterval(() => setElapsed(Date.now() - openedAtMs), 1000);
     return () => clearInterval(id);
@@ -132,12 +139,14 @@ export function EntryRunner({
   useEffect(() => {
     let cancelled = false;
     setPhotoMissing(false);
+    setLoadedLabel(null);
+    setOpenedAtMs(null);
+    setElapsed(0);
     setNa(EMPTY_NA);
     setModelFields(new Set());
     setOcrNote("");
     setOcrRaw("");
     setTokens({ input: null, output: null });
-    setOpenedAtMs(Date.now());
 
     if (!label) {
       setFields(EMPTY_FIELDS);
@@ -200,7 +209,14 @@ export function EntryRunner({
     });
   }
 
+  function handlePhotoLoad() {
+    if (!label) return;
+    setLoadedLabel(label);
+    setOpenedAtMs(Date.now());
+  }
+
   function restartTimer() {
+    if (!photoReady) return;
     setOpenedAtMs(Date.now());
   }
 
@@ -209,7 +225,7 @@ export function EntryRunner({
   }
 
   async function runOcr() {
-    if (!label || busy) return;
+    if (!label || !photoReady || busy) return;
     const img = document.querySelector<HTMLImageElement>("[data-corpus-image]");
     if (!img || !img.complete || !img.naturalWidth) {
       setOcrNote("The corpus photo is not loaded yet.");
@@ -324,20 +340,33 @@ export function EntryRunner({
           {photoMissing ? (
             <div className={styles.photoPlaceholder}>
               <span>
-                Photo for {item.label} is not prepared yet. Run{" "}
-                <code>node scripts/prepare-corpus.mjs</code> to convert the
-                HEIC corpus into public/corpus.
+                Photo for {item.label} could not be loaded. Ask an admin to run{" "}
+                <code>npm run corpus:prepare</code> and{" "}
+                <code>npm run corpus:upload</code>.
               </span>
             </div>
           ) : (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              data-corpus-image
-              src={corpusImageUrl(item.label)}
-              alt={`Job card ${item.label}`}
-              className={styles.photo}
-              onError={() => setPhotoMissing(true)}
-            />
+            <div
+              className={`${styles.photoWrap} ${
+                photoReady ? "" : styles.photoWrapLoading
+              }`}
+            >
+              {/* Hidden until loaded so the timer starts at the same moment the photo appears. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                key={item.label}
+                data-corpus-image
+                src={corpusImageUrl(item.label)}
+                alt={`Job card ${item.label}`}
+                className={styles.photo}
+                style={{ visibility: photoReady ? "visible" : "hidden" }}
+                onLoad={handlePhotoLoad}
+                onError={() => setPhotoMissing(true)}
+              />
+              {!photoReady && (
+                <span className={styles.photoLoading}>Loading photo…</span>
+              )}
+            </div>
           )}
           <span className={styles.photoCaption}>
             {item.label} of {CORPUS.length} ({item.file})
@@ -350,7 +379,7 @@ export function EntryRunner({
           <input
             type="hidden"
             name="opened_at"
-            value={new Date(openedAtMs).toISOString()}
+            value={openedAtMs === null ? "" : new Date(openedAtMs).toISOString()}
           />
           <input
             type="hidden"
@@ -398,7 +427,7 @@ export function EntryRunner({
               <button
                 type="button"
                 onClick={runOcr}
-                disabled={busy || photoMissing}
+                disabled={busy || photoMissing || !photoReady}
                 className={styles.button}
               >
                 {busy ? "Extracting…" : "Run OCR"}
@@ -572,7 +601,7 @@ export function EntryRunner({
           <div className={styles.actionsRow}>
             <button
               type="submit"
-              disabled={entrySaving}
+              disabled={entrySaving || !photoReady}
               className={styles.buttonGreen}
             >
               {entrySaving ? "Saving…" : "Save and next"}
@@ -580,6 +609,7 @@ export function EntryRunner({
             <button
               type="button"
               onClick={restartTimer}
+              disabled={!photoReady}
               className={styles.buttonQuiet}
             >
               Flag interrupted, re-time
