@@ -24,6 +24,8 @@ function toEntryMap(
       date_promised: row.date_promised,
       instructions: row.instructions,
       price: row.price,
+      na_fields: row.na_fields,
+      invalid_fields: row.invalid_fields,
     };
   }
   return map;

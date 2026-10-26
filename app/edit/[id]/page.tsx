@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/app/navbar";
+import { isoToDate, statusFromRow } from "@/lib/record-fields";
 import { EditRecordForm } from "../edit-form";
 import styles from "../edit.module.css";
 
@@ -34,7 +35,7 @@ export default async function EditRecordPage({
   const { data: record } = await supabase
     .from("records")
     .select(
-      "id, client_name, phone_number, date, date_promised, instructions, price",
+      "id, client_name, phone_number, date, date_promised, instructions, price, na_fields, invalid_fields",
     )
     .eq("id", id)
     .maybeSingle();
@@ -57,11 +58,12 @@ export default async function EditRecordPage({
           initial={{
             client_name: record.client_name ?? "",
             phone_number: record.phone_number ?? "",
-            date: record.date ?? "",
-            date_promised: record.date_promised ?? "",
+            date: isoToDate(record.date),
+            date_promised: isoToDate(record.date_promised),
             instructions: record.instructions ?? "",
-            price: record.price ?? "",
+            price: record.price == null ? "" : String(record.price),
           }}
+          initialStatus={statusFromRow(record)}
         />
       </main>
     </>

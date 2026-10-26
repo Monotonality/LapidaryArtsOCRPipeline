@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { parseRecordForm } from "@/lib/record-fields";
 
 type CreateRecordState = {
   error?: string;
@@ -22,22 +23,11 @@ export async function createRecord(
     return { error: "You must be signed in to add a record." };
   }
 
-  const read = (key: string) => String(formData.get(key) ?? "").trim();
-
-  const rawPrice = read("price");
-  const price = rawPrice === "" ? null : Number(rawPrice.replace(",", "."));
-
-  if (price !== null && !Number.isFinite(price)) {
-    return { error: "Price must be a number, e.g. 125.50" };
-  }
+  const parsed = parseRecordForm(formData, "iso");
+  if ("error" in parsed) return { error: parsed.error };
 
   const { error } = await supabase.from("records").insert({
-    client_name: read("client_name") || null,
-    phone_number: read("phone_number") || null,
-    date: read("date") || null,
-    date_promised: read("date_promised") || null,
-    instructions: read("instructions") || null,
-    price,
+    ...parsed.record,
     created_by: user.id,
     updated_by: user.id,
   });

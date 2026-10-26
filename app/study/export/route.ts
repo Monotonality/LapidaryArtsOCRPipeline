@@ -4,7 +4,7 @@ import type { StudyArchiveRow, StudyEntryRow, StudyValidationRow } from "../acti
 
 function csvEscape(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const s = String(value);
+  const s = Array.isArray(value) ? value.join(";") : String(value);
   if (/[",\n\r]/.test(s)) {
     return `"${s.replace(/"/g, '""')}"`;
   }

@@ -2,6 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import {
+  dateToIso,
+  displayValue,
+  isoToDate,
+  statusFromRow,
+  type FieldKey,
+} from "@/lib/record-fields";
+import { DateInput } from "@/app/field-inputs";
 import styles from "./dashboard.module.css";
 
 export type RecordRow = {
@@ -11,6 +19,8 @@ export type RecordRow = {
   date: string | null;
   date_promised: string | null;
   price: string | number | null;
+  na_fields: string[] | null;
+  invalid_fields: string[] | null;
   created_at: string;
   updated_at: string;
   creator: { email: string | null } | { email: string | null }[] | null;
@@ -49,7 +59,10 @@ function rangeFromPreset(
   from: string,
   to: string,
 ): { from: string; to: string } {
-  if (preset === "custom") return { from, to };
+  // Custom bounds are typed as MM-DD-YY; ignore them until they are complete.
+  if (preset === "custom") {
+    return { from: dateToIso(from) ?? "", to: dateToIso(to) ?? "" };
+  }
   if (preset === "any") return { from: "", to: "" };
 
   const today = new Date();
@@ -82,6 +95,15 @@ function emailOf(
 ): string | null {
   if (Array.isArray(ref)) return ref[0]?.email ?? null;
   return ref?.email ?? null;
+}
+
+/** Table/CSV text for a field: N/A or Invalid when flagged, dates as MM-DD-YY. */
+function cellText(row: RecordRow, key: FieldKey & keyof RecordRow): string {
+  const value = row[key] as string | number | null;
+  const shown = key === "date" || key === "date_promised"
+    ? isoToDate(value as string | null)
+    : value;
+  return displayValue(statusFromRow(row)[key], shown);
 }
 
 function toNumber(v: string | null | undefined): number | null {
@@ -205,10 +227,10 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
     let rows = records.filter((r) => {
       if (q) {
         const haystack = [
-          r.client_name ?? "",
-          r.phone_number ?? "",
-          r.date ?? "",
-          r.date_promised ?? "",
+          cellText(r, "client_name"),
+          cellText(r, "phone_number"),
+          cellText(r, "date"),
+          cellText(r, "date_promised"),
         ]
           .join(" ")
           .toLowerCase();
@@ -277,11 +299,11 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
 
   function handleExport() {
     const body = filtered.map((r) => [
-      r.client_name ?? "",
-      r.phone_number ?? "",
-      r.date ?? "",
-      r.date_promised ?? "",
-      r.price != null ? String(r.price) : "",
+      cellText(r, "client_name"),
+      cellText(r, "phone_number"),
+      cellText(r, "date"),
+      cellText(r, "date_promised"),
+      cellText(r, "price"),
       r.created_at ? new Date(r.created_at).toLocaleString() : "",
       r.updated_at ? new Date(r.updated_at).toLocaleString() : "",
       emailOf(r.creator) ?? "",
@@ -363,19 +385,17 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
                   <div className={styles.rangeRow}>
                     <label className={styles.filterField}>
                       <span className={styles.filterLabel}>Date from</span>
-                      <input
-                        type="date"
+                      <DateInput
                         value={dateFrom}
-                        onChange={(e) => setDateFrom(e.target.value)}
+                        onValueChange={setDateFrom}
                         className={styles.filterInput}
                       />
                     </label>
                     <label className={styles.filterField}>
                       <span className={styles.filterLabel}>Date to</span>
-                      <input
-                        type="date"
+                      <DateInput
                         value={dateTo}
-                        onChange={(e) => setDateTo(e.target.value)}
+                        onValueChange={setDateTo}
                         className={styles.filterInput}
                       />
                     </label>
@@ -385,19 +405,17 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
                   <div className={styles.rangeRow}>
                     <label className={styles.filterField}>
                       <span className={styles.filterLabel}>Promised from</span>
-                      <input
-                        type="date"
+                      <DateInput
                         value={promisedFrom}
-                        onChange={(e) => setPromisedFrom(e.target.value)}
+                        onValueChange={setPromisedFrom}
                         className={styles.filterInput}
                       />
                     </label>
                     <label className={styles.filterField}>
                       <span className={styles.filterLabel}>Promised to</span>
-                      <input
-                        type="date"
+                      <DateInput
                         value={promisedTo}
-                        onChange={(e) => setPromisedTo(e.target.value)}
+                        onValueChange={setPromisedTo}
                         className={styles.filterInput}
                       />
                     </label>
@@ -495,19 +513,21 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
                 {filtered.map((r) => (
                   <tr key={r.id}>
                     <td>
-                      {r.client_name ?? (
+                      {cellText(r, "client_name") || (
                         <span className={styles.cellMuted}>-</span>
                       )}
                     </td>
                     <td className={styles.cellMono}>
-                      {r.phone_number ?? "-"}
+                      {cellText(r, "phone_number") || "-"}
                     </td>
-                    <td className={styles.cellMono}>{r.date ?? "-"}</td>
                     <td className={styles.cellMono}>
-                      {r.date_promised ?? "-"}
+                      {cellText(r, "date") || "-"}
+                    </td>
+                    <td className={styles.cellMono}>
+                      {cellText(r, "date_promised") || "-"}
                     </td>
                     <td className={`${styles.cellMono} ${styles.cellNum}`}>
-                      {r.price ?? "-"}
+                      {cellText(r, "price") || "-"}
                     </td>
                     <td>
                       <Link

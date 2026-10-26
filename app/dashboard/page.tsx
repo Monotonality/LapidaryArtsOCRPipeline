@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   const { data: rows } = await supabase
     .from("records")
     .select(
-      "id, client_name, phone_number, date, date_promised, price, created_at, updated_at, created_by, updated_by",
+      "id, client_name, phone_number, date, date_promised, price, na_fields, invalid_fields, created_at, updated_at, created_by, updated_by",
     )
     .order("created_at", { ascending: false })
     .limit(1000);

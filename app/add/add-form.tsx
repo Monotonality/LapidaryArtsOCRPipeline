@@ -1,33 +1,37 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import { createRecord } from "./actions";
 import { FIELD_KEYS, type FieldKey, type CheckedFields } from "./reader";
 import { PhotoReader } from "./photo-reader";
+import {
+  EMPTY_STATUS, STATUS_TEXT, isoToDate, statusToColumns,
+  type FieldStatus, type StatusMap,
+} from "@/lib/record-fields";
+import { DateInput, FieldStatusTicks, useKeepScrollWhileTyping } from "@/app/field-inputs";
 import styles from "./add.module.css";
 
 type Mode = "form" | "photo";
 type RecordFields = Record<FieldKey, string>;
-type NaMap = Record<FieldKey, boolean>;
 
 const EMPTY: RecordFields = {
   client_name: "", phone_number: "", date: "", date_promised: "", instructions: "", price: "",
 };
 
-const NO_NA: NaMap = {
-  client_name: false, phone_number: false, date: false,
-  date_promised: false, instructions: false, price: false,
-};
-
 export function AddRecord({ demo = false }: { demo?: boolean }) {
   const [mode, setMode] = useState<Mode>("form");
   const [form, setForm] = useState<RecordFields>(EMPTY);
-  const [na, setNa] = useState<NaMap>(NO_NA);
+  const [status, setStatus] = useState<StatusMap>(EMPTY_STATUS);
   const [edited, setEdited] = useState<Set<FieldKey>>(new Set());
   const [reviewed, setReviewed] = useState(false);
   const [hasPhoto, setHasPhoto] = useState(false);
   const [photoKey, setPhotoKey] = useState(0);
   const [state, formAction, saving] = useActionState(createRecord, {});
+  const stageRef = useRef<HTMLDivElement>(null);
+  useKeepScrollWhileTyping(stageRef);
+  const na = Object.fromEntries(FIELD_KEYS.map((key) => [key, status[key] !== "value"])) as Record<FieldKey, boolean>;
+  const flagText = (key: FieldKey) => status[key] === "value" ? undefined : STATUS_TEXT[status[key] as "na" | "invalid"];
+  const columns = statusToColumns(status);
 
   function set(key: FieldKey, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -35,14 +39,18 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
     setReviewed(false);
   }
 
-  function toggleNa(key: FieldKey) {
-    setNa((current) => ({ ...current, [key]: !current[key] }));
+  function setFieldStatus(key: FieldKey, next: FieldStatus) {
+    setStatus((current) => ({ ...current, [key]: next }));
     setReviewed(false);
   }
 
+  const ticks = (key: FieldKey) => (
+    <FieldStatusTicks status={status[key]} onChange={(next) => setFieldStatus(key, next)} className={styles.naTick} />
+  );
+
   function clearAll() {
     setForm(EMPTY);
-    setNa(NO_NA);
+    setStatus(EMPTY_STATUS);
     setEdited(new Set());
     setReviewed(false);
     setHasPhoto(false);
@@ -53,14 +61,16 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
     setForm((current) => {
       const next = { ...current };
       for (const key of FIELD_KEYS) {
-        if (!edited.has(key)) next[key] = fields[key].reviewValue ?? "";
+        if (edited.has(key)) continue;
+        const value = fields[key].reviewValue ?? "";
+        next[key] = key === "date" || key === "date_promised" ? isoToDate(value) : value;
       }
       return next;
     });
-    setNa((current) => {
+    setStatus((current) => {
       const next = { ...current };
       for (const key of FIELD_KEYS) {
-        if (!edited.has(key) && fields[key].reviewValue) next[key] = false;
+        if (!edited.has(key) && fields[key].reviewValue) next[key] = "value";
       }
       return next;
     });
@@ -68,7 +78,7 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
   }
 
   return (
-    <div className={styles.stage}>
+    <div ref={stageRef} className={styles.stage}>
       <div className={styles.tabs} role="tablist" aria-label="Add a record">
         <button type="button" role="tab" aria-selected={mode === "form"}
           onClick={() => setMode("form")} className={mode === "form" ? styles.tabActive : styles.tab}>Form</button>
@@ -80,7 +90,7 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
         <PhotoReader
           key={photoKey}
           onPhotoChange={(selected) => {
-            setHasPhoto(selected); setForm(EMPTY); setNa(NO_NA); setEdited(new Set()); setReviewed(false);
+            setHasPhoto(selected); setForm(EMPTY); setStatus(EMPTY_STATUS); setEdited(new Set()); setReviewed(false);
           }}
           onModel={applyModel}
           demo={demo}
@@ -88,81 +98,60 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
       </div>
 
       <form action={demo ? undefined : formAction} onSubmit={demo ? (event) => event.preventDefault() : undefined} className={styles.form}>
-        {na.client_name && <input type="hidden" name="client_name" value="N/A" />}
-        {na.phone_number && <input type="hidden" name="phone_number" value="N/A" />}
-        {na.date && <input type="hidden" name="date" value="N/A" />}
-        {na.date_promised && <input type="hidden" name="date_promised" value="N/A" />}
-        {na.instructions && <input type="hidden" name="instructions" value="N/A" />}
+        <input type="hidden" name="na_fields" value={columns.na_fields.join(",")} />
+        <input type="hidden" name="invalid_fields" value={columns.invalid_fields.join(",")} />
         <div className={styles.fields}>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
               <span className={styles.fieldLabel}>Client name</span>
-              <span className={styles.naTick}>
-                <input type="checkbox" checked={na.client_name} onChange={() => toggleNa("client_name")} />
-                N/A
-              </span>
+              {ticks("client_name")}
             </span>
             <input name="client_name" type="text" value={na.client_name ? "" : form.client_name} onChange={(event) => set("client_name", event.target.value)}
               required={!na.client_name} disabled={na.client_name} autoComplete="off"
-              placeholder={na.client_name ? "N/A" : "e.g. Margaret Ellison"} className={styles.input} />
+              placeholder={flagText("client_name") ?? "e.g. Margaret Ellison"} className={styles.input} />
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
               <span className={styles.fieldLabel}>Phone number</span>
-              <span className={styles.naTick}>
-                <input type="checkbox" checked={na.phone_number} onChange={() => toggleNa("phone_number")} />
-                N/A
-              </span>
+              {ticks("phone_number")}
             </span>
             <input name="phone_number" type="tel" value={na.phone_number ? "" : form.phone_number} onChange={(event) => set("phone_number", event.target.value)}
               disabled={na.phone_number} autoComplete="off"
-              placeholder={na.phone_number ? "N/A" : "e.g. 214-555-0137"} className={styles.input} />
+              placeholder={flagText("phone_number") ?? "e.g. 214-555-0137"} className={styles.input} />
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
               <span className={styles.fieldLabel}>Date</span>
-              <span className={styles.naTick}>
-                <input type="checkbox" checked={na.date} onChange={() => toggleNa("date")} />
-                N/A
-              </span>
+              {ticks("date")}
             </span>
-            <input name="date" type="date" value={na.date ? "" : form.date} onChange={(event) => set("date", event.target.value)}
-              disabled={na.date} className={styles.input} />
+            <DateInput name="date" value={na.date ? "" : form.date} onValueChange={(value) => set("date", value)}
+              disabled={na.date} placeholder={flagText("date")} className={styles.input} />
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
               <span className={styles.fieldLabel}>Date promised</span>
-              <span className={styles.naTick}>
-                <input type="checkbox" checked={na.date_promised} onChange={() => toggleNa("date_promised")} />
-                N/A
-              </span>
+              {ticks("date_promised")}
             </span>
-            <input name="date_promised" type="date" value={na.date_promised ? "" : form.date_promised} onChange={(event) => set("date_promised", event.target.value)}
-              disabled={na.date_promised} className={styles.input} />
+            <DateInput name="date_promised" value={na.date_promised ? "" : form.date_promised} onValueChange={(value) => set("date_promised", value)}
+              disabled={na.date_promised} placeholder={flagText("date_promised")} className={styles.input} />
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
               <span className={styles.fieldLabel}>Price</span>
-              <span className={styles.naTick}>
-                <input type="checkbox" checked={na.price} onChange={() => toggleNa("price")} />
-                N/A
-              </span>
+              {ticks("price")}
             </span>
             <input name="price" type="text" inputMode="decimal" value={na.price ? "" : form.price} onChange={(event) => set("price", event.target.value)}
               disabled={na.price} autoComplete="off"
-              placeholder={na.price ? "N/A" : "e.g. 125.50"} className={styles.input} />
+              placeholder={flagText("price") ?? "e.g. 125.50"} className={styles.input} />
           </label>
           <label className={`${styles.field} ${styles.fieldFull}`}>
             <span className={styles.fieldHead}>
               <span className={styles.fieldLabel}>Instructions / article details</span>
-              <span className={styles.naTick}>
-                <input type="checkbox" checked={na.instructions} onChange={() => toggleNa("instructions")} />
-                N/A
-              </span>
+              {ticks("instructions")}
             </span>
             <textarea name="instructions" value={na.instructions ? "" : form.instructions} onChange={(event) => set("instructions", event.target.value)}
               disabled={na.instructions} rows={4}
-              placeholder={na.instructions ? "N/A" : "e.g. Ring sizing; reset two stones."} className={styles.textarea} />
+              placeholder={flagText("instructions") ?? "e.g. Ring sizing; reset two stones."} className={styles.textarea} />
           </label>
         </div>
 

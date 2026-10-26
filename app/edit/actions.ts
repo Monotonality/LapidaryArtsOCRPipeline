@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { parseRecordForm } from "@/lib/record-fields";
 
 type UpdateRecordState = {
   error?: string;
@@ -27,24 +28,13 @@ export async function updateRecord(
     return { error: "Missing record id." };
   }
 
-  const read = (key: string) => String(formData.get(key) ?? "").trim();
-
-  const rawPrice = read("price");
-  const price = rawPrice === "" ? null : Number(rawPrice.replace(",", "."));
-
-  if (price !== null && !Number.isFinite(price)) {
-    return { error: "Price must be a number, e.g. 125.50" };
-  }
+  const parsed = parseRecordForm(formData, "iso");
+  if ("error" in parsed) return { error: parsed.error };
 
   const { error } = await supabase
     .from("records")
     .update({
-      client_name: read("client_name") || null,
-      phone_number: read("phone_number") || null,
-      date: read("date") || null,
-      date_promised: read("date_promised") || null,
-      instructions: read("instructions") || null,
-      price,
+      ...parsed.record,
       updated_by: user.id,
     })
     .eq("id", id);

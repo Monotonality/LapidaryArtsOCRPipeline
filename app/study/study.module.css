@@ -145,8 +145,37 @@
 }
 
 @media (max-width: 900px) {
+  /* Flex, not grid: a sticky grid item can only stick within its own grid
+     row, which would let the photo scroll away with the form. */
   .entryLayout {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Phones and tablets: keep a compact photo pinned to the top while the form
+     scrolls under it, so the card stays visible while typing. Sits above the
+     sticky navbar (z-index 20) once the page is scrolled. */
+  .entryLayout .photoPanel {
+    position: sticky;
+    top: 0;
+    z-index: 21;
+    padding: var(--space-2) 0;
+    background: var(--bg);
+  }
+
+  .entryLayout .photo {
+    max-height: 32svh;
+  }
+
+  .entryLayout .photoWrapLoading {
+    min-height: 12rem;
+  }
+
+  /* When the browser scrolls a focused field into view, stop it below the
+     pinned photo instead of underneath it. */
+  .entryLayout .input,
+  .entryLayout .textarea {
+    scroll-margin-top: calc(32svh + 4rem);
   }
 }
 
@@ -455,7 +484,7 @@
     grid-template-columns: 1fr;
   }
 
-  .photoPanel {
+  .compareGrid .photoPanel {
     position: static;
   }
 }
