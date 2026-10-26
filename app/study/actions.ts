@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { isValidLabel } from "./corpus";
+import { parseRecordForm } from "@/lib/record-fields";
 
 export type StudyCondition = "control" | "experimental";
 
@@ -20,6 +21,8 @@ export type StudyEntryRow = {
   date_promised: string | null;
   instructions: string | null;
   price: number | null;
+  na_fields: string[] | null;
+  invalid_fields: string[] | null;
   input_tokens: number | null;
   output_tokens: number | null;
   interrupted: boolean;
@@ -115,8 +118,8 @@ export async function saveStudyEntry(
     const n = Number.parseInt(raw, 10);
     return Number.isFinite(n) && n >= 0 ? n : null;
   };
-  const priceRaw = read("price").replace(",", ".");
-  const price = priceRaw ? Number.parseFloat(priceRaw) : NaN;
+  const parsed = parseRecordForm(formData, "text");
+  if ("error" in parsed) return { error: parsed.error };
 
   const { error } = await supabase.from("study_entries").upsert(
     {
@@ -125,12 +128,7 @@ export async function saveStudyEntry(
       participant: user.id,
       opened_at: openedAt.toISOString(),
       submitted_at: new Date(now).toISOString(),
-      client_name: read("client_name") || null,
-      phone_number: read("phone_number") || null,
-      date: read("date") || null,
-      date_promised: read("date_promised") || null,
-      instructions: read("instructions") || null,
-      price: Number.isFinite(price) ? price : null,
+      ...parsed.record,
       input_tokens: condition === "experimental" ? readInt("input_tokens") : null,
       output_tokens:
         condition === "experimental" ? readInt("output_tokens") : null,
@@ -254,7 +252,7 @@ Extract exactly these six fields: client_name, phone_number, date, date_promised
 Rules:
 - phone_number: the handwritten customer phone, keep formatting marks that appear on the card. Never add an area code that is not written. The printed store phone 972-964-1090 is never the customer phone.
 - date is the handwritten DATE RECEIVED box; date_promised is only the DATE PROMISED box, which is often blank. Ignore "called <date>" notes.
-- date and date_promised: YYYY-MM-DD when a full date is visible; empty string otherwise.
+- date and date_promised: MM-DD-YY (two-digit month, day and year, hyphens) when a full date is visible; empty string otherwise.
 - price: numbers only, no currency symbol.
 - instructions: the article/repair details, joined with "; " if multiple lines.
 - Use an empty string for any field you cannot read confidently.

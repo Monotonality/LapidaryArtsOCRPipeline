@@ -9,6 +9,7 @@ import {
 } from "react";
 import { CORPUS, corpusImageUrl } from "./corpus";
 import { saveStudyValidation } from "./actions";
+import { displayValue, statusFromRow } from "@/lib/record-fields";
 import styles from "./study.module.css";
 
 export type ValidatorEntry = {
@@ -18,6 +19,8 @@ export type ValidatorEntry = {
   date_promised: string | null;
   instructions: string | null;
   price: number | null;
+  na_fields: string[] | null;
+  invalid_fields: string[] | null;
 };
 
 export type ExistingValidation = {
@@ -65,9 +68,7 @@ function fieldValue(
   key: (typeof VALUE_KEYS)[number],
 ): string {
   if (!entry) return "";
-  const v = entry[key];
-  if (v === null || v === undefined) return "";
-  return String(v);
+  return displayValue(statusFromRow(entry)[key], entry[key]);
 }
 
 export function ValidatorRunner({

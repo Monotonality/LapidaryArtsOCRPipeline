@@ -9,6 +9,22 @@ import {
 } from "react";
 import { createClient } from "@/lib/supabase/client";
 import {
+  EMPTY_STATUS,
+  FIELD_KEYS,
+  STATUS_TEXT,
+  normalizeDate,
+  statusFromRow,
+  statusToColumns,
+  type FieldKey,
+  type FieldStatus,
+  type StatusMap,
+} from "@/lib/record-fields";
+import {
+  DateInput,
+  FieldStatusTicks,
+  useKeepScrollWhileTyping,
+} from "@/app/field-inputs";
+import {
   CORPUS,
   corpusImageUrl,
   type CorpusItem,
@@ -21,14 +37,7 @@ import {
 } from "./actions";
 import styles from "./study.module.css";
 
-type Fields = {
-  client_name: string;
-  phone_number: string;
-  date: string;
-  date_promised: string;
-  instructions: string;
-  price: string;
-};
+type Fields = Record<FieldKey, string>;
 
 const EMPTY_FIELDS: Fields = {
   client_name: "",
@@ -39,40 +48,35 @@ const EMPTY_FIELDS: Fields = {
   price: "",
 };
 
-const FIELD_KEYS = Object.keys(EMPTY_FIELDS) as (keyof Fields)[];
-
-const EMPTY_NA: Record<keyof Fields, boolean> = {
-  client_name: false,
-  phone_number: false,
-  date: false,
-  date_promised: false,
-  instructions: false,
-  price: false,
-};
-
-function rowToNa(row: StudyEntryRow | null | undefined): Record<keyof Fields, boolean> {
-  if (!row) return EMPTY_NA;
-  return {
-    client_name: row.client_name === "N/A",
-    phone_number: row.phone_number === "N/A",
-    date: row.date === "N/A",
-    date_promised: row.date_promised === "N/A",
-    instructions: row.instructions === "N/A",
-    price: false,
-  };
-}
-
 function rowToFields(row: StudyEntryRow | null | undefined): Fields {
   if (!row) return EMPTY_FIELDS;
+  const status = statusFromRow(row);
+  const text = (key: FieldKey, v: string | number | null) =>
+    status[key] !== "value" || v === null || v === undefined ? "" : String(v);
   return {
-    client_name: row.client_name ?? "",
-    phone_number: row.phone_number ?? "",
-    date: row.date ?? "",
-    date_promised: row.date_promised ?? "",
-    instructions: row.instructions ?? "",
-    price: row.price === null || row.price === undefined ? "" : String(row.price),
+    client_name: text("client_name", row.client_name),
+    phone_number: text("phone_number", row.phone_number),
+    date: text("date", row.date),
+    date_promised: text("date_promised", row.date_promised),
+    instructions: text("instructions", row.instructions),
+    price: text("price", row.price),
   };
 }
+
+const FIELD_ROWS: {
+  key: FieldKey;
+  label: string;
+  kind: "text" | "date" | "price" | "textarea";
+  mono?: boolean;
+  required?: boolean;
+}[] = [
+  { key: "client_name", label: "Client name", kind: "text", required: true },
+  { key: "phone_number", label: "Phone number", kind: "text", mono: true },
+  { key: "date", label: "Date", kind: "date", mono: true },
+  { key: "date_promised", label: "Date promised", kind: "date", mono: true },
+  { key: "price", label: "Price", kind: "price", mono: true },
+  { key: "instructions", label: "Instructions / article details", kind: "textarea" },
+];
 
 function formatElapsed(ms: number): string {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -101,7 +105,7 @@ export function EntryRunner({
     initialLabel ?? CORPUS[0]?.label ?? null,
   );
   const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
-  const [na, setNa] = useState<Record<keyof Fields, boolean>>(EMPTY_NA);
+  const [status, setStatus] = useState<StatusMap>(EMPTY_STATUS);
   const [modelFields, setModelFields] = useState<Set<string>>(new Set());
   const [openedAtMs, setOpenedAtMs] = useState<number | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -121,6 +125,9 @@ export function EntryRunner({
     {},
   );
   const handledSaveRef = useRef<number | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const imgRef = useRef<HTMLImageElement>(null);
+  useKeepScrollWhileTyping(formRef);
 
   const photoReady = label !== null && loadedLabel === label;
 
@@ -142,7 +149,7 @@ export function EntryRunner({
     setLoadedLabel(null);
     setOpenedAtMs(null);
     setElapsed(0);
-    setNa(EMPTY_NA);
+    setStatus(EMPTY_STATUS);
     setModelFields(new Set());
     setOcrNote("");
     setOcrRaw("");
@@ -154,6 +161,13 @@ export function EntryRunner({
       return;
     }
 
+    // A cached photo can finish loading before React attaches onLoad.
+    const img = imgRef.current;
+    if (img && img.complete && img.naturalWidth > 0) {
+      setLoadedLabel(label);
+      setOpenedAtMs(Date.now());
+    }
+
     supabase
       .from("study_entries")
       .select("*")
@@ -163,7 +177,7 @@ export function EntryRunner({
       .then(({ data }) => {
         if (cancelled) return;
         setFields(rowToFields(data as StudyEntryRow | null));
-        setNa(rowToNa(data as StudyEntryRow | null));
+        setStatus(statusFromRow(data as StudyEntryRow | null));
         setHadPriorEntry(Boolean(data));
       });
 
@@ -199,7 +213,7 @@ export function EntryRunner({
     }
   }, [entryState.savedAt, label, completed]);
 
-  function setField(key: keyof Fields, value: string) {
+  function setField(key: FieldKey, value: string) {
     setFields((f) => ({ ...f, [key]: value }));
     setModelFields((prev) => {
       if (!prev.has(key)) return prev;
@@ -220,8 +234,8 @@ export function EntryRunner({
     setOpenedAtMs(Date.now());
   }
 
-  function toggleNa(key: keyof Fields) {
-    setNa((prev) => ({ ...prev, [key]: !prev[key] }));
+  function setFieldStatus(key: FieldKey, next: FieldStatus) {
+    setStatus((prev) => ({ ...prev, [key]: next }));
   }
 
   async function runOcr() {
@@ -260,7 +274,11 @@ export function EntryRunner({
       setFields((f) => {
         const next = { ...f };
         for (const key of FIELD_KEYS) {
-          const value = result.fields?.[key] ?? "";
+          let value = result.fields?.[key] ?? "";
+          if (value && (key === "date" || key === "date_promised")) {
+            // Only a real date can go in a date box; leave the rest for review.
+            value = normalizeDate(value) ?? "";
+          }
           if (value) {
             next[key] = value;
             filled.add(key);
@@ -268,9 +286,9 @@ export function EntryRunner({
         }
         return next;
       });
-      setNa((prev) => {
+      setStatus((prev) => {
         const next = { ...prev };
-        for (const key of filled) next[key as keyof Fields] = false;
+        for (const key of filled) next[key as FieldKey] = "value";
         return next;
       });
       setModelFields(filled);
@@ -355,6 +373,7 @@ export function EntryRunner({
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 key={item.label}
+                ref={imgRef}
                 data-corpus-image
                 src={corpusImageUrl(item.label)}
                 alt={`Job card ${item.label}`}
@@ -373,7 +392,11 @@ export function EntryRunner({
           </span>
         </div>
 
-        <form action={entryFormAction} className={styles.formPanel}>
+        <form
+          ref={formRef}
+          action={entryFormAction}
+          className={styles.formPanel}
+        >
           <input type="hidden" name="condition" value={condition} />
           <input type="hidden" name="corpus_label" value={item.label} />
           <input
@@ -381,35 +404,23 @@ export function EntryRunner({
             name="opened_at"
             value={openedAtMs === null ? "" : new Date(openedAtMs).toISOString()}
           />
+          {FIELD_KEYS.map((key) => (
+            <input
+              key={key}
+              type="hidden"
+              name={key}
+              value={status[key] === "value" ? fields[key] : ""}
+            />
+          ))}
           <input
             type="hidden"
-            name="client_name"
-            value={na.client_name ? "N/A" : fields.client_name}
+            name="na_fields"
+            value={statusToColumns(status).na_fields.join(",")}
           />
           <input
             type="hidden"
-            name="phone_number"
-            value={na.phone_number ? "N/A" : fields.phone_number}
-          />
-          <input
-            type="hidden"
-            name="date"
-            value={na.date ? "N/A" : fields.date}
-          />
-          <input
-            type="hidden"
-            name="date_promised"
-            value={na.date_promised ? "N/A" : fields.date_promised}
-          />
-          <input
-            type="hidden"
-            name="instructions"
-            value={na.instructions ? "N/A" : fields.instructions}
-          />
-          <input
-            type="hidden"
-            name="price"
-            value={na.price ? "" : fields.price}
+            name="invalid_fields"
+            value={statusToColumns(status).invalid_fields.join(",")}
           />
           <input
             type="hidden"
@@ -446,150 +457,67 @@ export function EntryRunner({
           )}
 
           <div className={styles.fields}>
-            <label className={styles.field}>
-              <span className={styles.fieldHead}>
-                <span>Client name</span>
-                <span className={styles.naTick}>
-                  <input
-                    type="checkbox"
-                    checked={na.client_name}
-                    onChange={() => toggleNa("client_name")}
-                  />
-                  N/A
-                </span>
-              </span>
-              <input
-                type="text"
-                value={na.client_name ? "" : fields.client_name}
-                onChange={(e) => setField("client_name", e.target.value)}
-                required={!na.client_name}
-                disabled={na.client_name}
-                autoComplete="off"
-                placeholder={na.client_name ? "N/A" : undefined}
-                className={`${styles.input} ${
-                  modelFields.has("client_name") ? styles.inputModel : ""
-                }`}
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.fieldHead}>
-                <span>Phone number</span>
-                <span className={styles.naTick}>
-                  <input
-                    type="checkbox"
-                    checked={na.phone_number}
-                    onChange={() => toggleNa("phone_number")}
-                  />
-                  N/A
-                </span>
-              </span>
-              <input
-                type="text"
-                value={na.phone_number ? "" : fields.phone_number}
-                onChange={(e) => setField("phone_number", e.target.value)}
-                disabled={na.phone_number}
-                autoComplete="off"
-                placeholder={na.phone_number ? "N/A" : undefined}
-                className={`${styles.input} ${styles.inputMono} ${
-                  modelFields.has("phone_number") ? styles.inputModel : ""
-                }`}
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.fieldHead}>
-                <span>Date</span>
-                <span className={styles.naTick}>
-                  <input
-                    type="checkbox"
-                    checked={na.date}
-                    onChange={() => toggleNa("date")}
-                  />
-                  N/A
-                </span>
-              </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={na.date ? "" : fields.date}
-                onChange={(e) => setField("date", e.target.value)}
-                disabled={na.date}
-                placeholder={na.date ? "N/A" : "YYYY-MM-DD"}
-                className={`${styles.input} ${styles.inputMono} ${
-                  modelFields.has("date") ? styles.inputModel : ""
-                }`}
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.fieldHead}>
-                <span>Date promised</span>
-                <span className={styles.naTick}>
-                  <input
-                    type="checkbox"
-                    checked={na.date_promised}
-                    onChange={() => toggleNa("date_promised")}
-                  />
-                  N/A
-                </span>
-              </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={na.date_promised ? "" : fields.date_promised}
-                onChange={(e) => setField("date_promised", e.target.value)}
-                disabled={na.date_promised}
-                placeholder={na.date_promised ? "N/A" : "YYYY-MM-DD"}
-                className={`${styles.input} ${styles.inputMono} ${
-                  modelFields.has("date_promised") ? styles.inputModel : ""
-                }`}
-              />
-            </label>
-            <label className={styles.field}>
-              <span className={styles.fieldHead}>
-                <span>Price</span>
-                <span className={styles.naTick}>
-                  <input
-                    type="checkbox"
-                    checked={na.price}
-                    onChange={() => toggleNa("price")}
-                  />
-                  N/A
-                </span>
-              </span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={na.price ? "" : fields.price}
-                onChange={(e) => setField("price", e.target.value)}
-                disabled={na.price}
-                placeholder={na.price ? "N/A" : "e.g. 125.50"}
-                className={`${styles.input} ${styles.inputMono} ${
-                  modelFields.has("price") ? styles.inputModel : ""
-                }`}
-              />
-            </label>
-            <label className={`${styles.field} ${styles.fieldFull}`}>
-              <span className={styles.fieldHead}>
-                <span>Instructions / article details</span>
-                <span className={styles.naTick}>
-                  <input
-                    type="checkbox"
-                    checked={na.instructions}
-                    onChange={() => toggleNa("instructions")}
-                  />
-                  N/A
-                </span>
-              </span>
-              <textarea
-                value={na.instructions ? "" : fields.instructions}
-                onChange={(e) => setField("instructions", e.target.value)}
-                disabled={na.instructions}
-                rows={4}
-                placeholder={na.instructions ? "N/A" : undefined}
-                className={`${styles.textarea} ${
-                  modelFields.has("instructions") ? styles.inputModel : ""
-                }`}
-              />
-            </label>
+            {FIELD_ROWS.map((row) => {
+              const flagged = status[row.key] !== "value";
+              const flagText = flagged
+                ? STATUS_TEXT[status[row.key] as "na" | "invalid"]
+                : undefined;
+              const className = `${
+                row.kind === "textarea" ? styles.textarea : styles.input
+              } ${row.mono ? styles.inputMono : ""} ${
+                modelFields.has(row.key) ? styles.inputModel : ""
+              }`;
+              const value = flagged ? "" : fields[row.key];
+              return (
+                <label
+                  key={row.key}
+                  className={`${styles.field} ${
+                    row.kind === "textarea" ? styles.fieldFull : ""
+                  }`}
+                >
+                  <span className={styles.fieldHead}>
+                    <span>{row.label}</span>
+                    <FieldStatusTicks
+                      status={status[row.key]}
+                      onChange={(next) => setFieldStatus(row.key, next)}
+                      className={styles.naTick}
+                    />
+                  </span>
+                  {row.kind === "date" ? (
+                    <DateInput
+                      value={value}
+                      onValueChange={(v) => setField(row.key, v)}
+                      disabled={flagged}
+                      placeholder={flagText}
+                      className={className}
+                    />
+                  ) : row.kind === "textarea" ? (
+                    <textarea
+                      value={value}
+                      onChange={(e) => setField(row.key, e.target.value)}
+                      disabled={flagged}
+                      rows={4}
+                      placeholder={flagText}
+                      className={className}
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      inputMode={row.kind === "price" ? "decimal" : undefined}
+                      value={value}
+                      onChange={(e) => setField(row.key, e.target.value)}
+                      required={row.required && !flagged}
+                      disabled={flagged}
+                      autoComplete="off"
+                      placeholder={
+                        flagText ?? (row.kind === "price" ? "e.g. 125.50" : undefined)
+                      }
+                      className={className}
+                    />
+                  )}
+                </label>
+              );
+            })}
           </div>
 
           {entryState.error && (

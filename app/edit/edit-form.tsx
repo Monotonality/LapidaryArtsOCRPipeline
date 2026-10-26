@@ -3,103 +3,141 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { updateRecord } from "./actions";
+import {
+  FIELD_KEYS,
+  STATUS_TEXT,
+  statusToColumns,
+  type FieldKey,
+  type FieldStatus,
+  type StatusMap,
+} from "@/lib/record-fields";
+import { DateInput, FieldStatusTicks } from "@/app/field-inputs";
 import styles from "@/app/add/add.module.css";
 
-type EditFields = {
-  client_name: string;
-  phone_number: string;
-  date: string;
-  date_promised: string;
-  instructions: string;
-  price: string;
-};
+type EditFields = Record<FieldKey, string>;
 
-export function EditRecordForm({ recordId, initial }: { recordId: string; initial: EditFields }) {
+export function EditRecordForm({
+  recordId,
+  initial,
+  initialStatus,
+}: {
+  recordId: string;
+  initial: EditFields;
+  initialStatus: StatusMap;
+}) {
   const [form, setForm] = useState<EditFields>(initial);
+  const [status, setStatus] = useState<StatusMap>(initialStatus);
   const [state, formAction, saving] = useActionState(updateRecord, {});
+  const columns = statusToColumns(status);
 
-  function set<K extends keyof EditFields>(key: K, value: string) {
+  function set(key: FieldKey, value: string) {
     setForm((f) => ({ ...f, [key]: value }));
   }
+
+  const flagged = (key: FieldKey) => status[key] !== "value";
+  const flagText = (key: FieldKey) =>
+    flagged(key) ? STATUS_TEXT[status[key] as "na" | "invalid"] : undefined;
+  const value = (key: FieldKey) => (flagged(key) ? "" : form[key]);
+  const head = (key: FieldKey, label: string) => (
+    <span className={styles.fieldHead}>
+      <span className={styles.fieldLabel}>{label}</span>
+      <FieldStatusTicks
+        status={status[key]}
+        onChange={(next: FieldStatus) =>
+          setStatus((s) => ({ ...s, [key]: next }))
+        }
+        className={styles.naTick}
+      />
+    </span>
+  );
 
   return (
     <form action={formAction} className={styles.form}>
       <input type="hidden" name="id" value={recordId} />
-      <input type="hidden" name="client_name" value={form.client_name} />
-      <input type="hidden" name="phone_number" value={form.phone_number} />
-      <input type="hidden" name="date" value={form.date} />
-      <input type="hidden" name="date_promised" value={form.date_promised} />
-      <input type="hidden" name="instructions" value={form.instructions} />
-      <input type="hidden" name="price" value={form.price} />
+      {FIELD_KEYS.map((key) => (
+        <input key={key} type="hidden" name={key} value={value(key)} />
+      ))}
+      <input type="hidden" name="na_fields" value={columns.na_fields.join(",")} />
+      <input
+        type="hidden"
+        name="invalid_fields"
+        value={columns.invalid_fields.join(",")}
+      />
 
       <div className={styles.fields}>
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Client name</span>
+          {head("client_name", "Client name")}
           <input
             type="text"
-            value={form.client_name}
+            value={value("client_name")}
             onChange={(e) => set("client_name", e.target.value)}
-            required
+            required={!flagged("client_name")}
+            disabled={flagged("client_name")}
             autoComplete="off"
-            placeholder="e.g. Margaret Ellison"
+            placeholder={flagText("client_name") ?? "e.g. Margaret Ellison"}
             className={styles.input}
           />
         </label>
 
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Phone number</span>
+          {head("phone_number", "Phone number")}
           <input
             type="tel"
-            value={form.phone_number}
+            value={value("phone_number")}
             onChange={(e) => set("phone_number", e.target.value)}
+            disabled={flagged("phone_number")}
             autoComplete="off"
-            placeholder="e.g. 214-555-0137"
+            placeholder={flagText("phone_number") ?? "e.g. 214-555-0137"}
             className={styles.input}
           />
         </label>
 
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Date</span>
-          <input
-            type="date"
-            value={form.date}
-            onChange={(e) => set("date", e.target.value)}
+          {head("date", "Date")}
+          <DateInput
+            value={value("date")}
+            onValueChange={(v) => set("date", v)}
+            disabled={flagged("date")}
+            placeholder={flagText("date")}
             className={styles.input}
           />
         </label>
 
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Date promised</span>
-          <input
-            type="date"
-            value={form.date_promised}
-            onChange={(e) => set("date_promised", e.target.value)}
+          {head("date_promised", "Date promised")}
+          <DateInput
+            value={value("date_promised")}
+            onValueChange={(v) => set("date_promised", v)}
+            disabled={flagged("date_promised")}
+            placeholder={flagText("date_promised")}
             className={styles.input}
           />
         </label>
 
         <label className={styles.field}>
-          <span className={styles.fieldLabel}>Price</span>
+          {head("price", "Price")}
           <input
             type="text"
             inputMode="decimal"
-            value={form.price}
+            value={value("price")}
             onChange={(e) => set("price", e.target.value)}
+            disabled={flagged("price")}
             autoComplete="off"
-            placeholder="e.g. 125.50"
+            placeholder={flagText("price") ?? "e.g. 125.50"}
             className={styles.input}
           />
         </label>
 
         <label className={`${styles.field} ${styles.fieldFull}`}>
-          <span className={styles.fieldLabel}>
-            Instructions / article details
-          </span>
+          {head("instructions", "Instructions / article details")}
           <textarea
-            value={form.instructions}
+            value={value("instructions")}
             onChange={(e) => set("instructions", e.target.value)}
+            disabled={flagged("instructions")}
             rows={4}
-            placeholder="e.g. Ring sizing; reset two stones."
+            placeholder={
+              flagText("instructions") ?? "e.g. Ring sizing; reset two stones."
+            }
             className={styles.textarea}
           />
         </label>
