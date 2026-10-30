@@ -11,6 +11,7 @@ import {
   type TimingPair,
   type ValidationChartRow,
 } from "../overview-charts";
+import { OverviewPanel } from "../overview-panel";
 import styles from "../study.module.css";
 
 function mean(rows: StudyEntryRow[]): number | null {
@@ -257,6 +258,17 @@ export default async function StudyOverviewPage() {
           </Link>
         </div>
 
+        <OverviewPanel
+          graphs={
+            <OverviewCharts
+              pairs={timingPairs}
+              validations={validationChartRows}
+              costs={costPoints}
+              corpusSize={CORPUS_SIZE}
+            />
+          }
+          data={
+            <>
         <div className={styles.statGrid}>
           {stats.map((s) => (
             <div key={s.label} className={styles.statCard}>
@@ -266,23 +278,6 @@ export default async function StudyOverviewPage() {
             </div>
           ))}
         </div>
-
-        <section className={styles.section}>
-          <div className={styles.sectionHead}>
-            <h2>Charts</h2>
-            <p className={styles.sectionHelp}>
-              Timing, accuracy, progress, and cost views. Use the novel-format
-              toggle on field charts to report date-promised errors with or
-              without relative wording.
-            </p>
-          </div>
-          <OverviewCharts
-            pairs={timingPairs}
-            validations={validationChartRows}
-            costs={costPoints}
-            corpusSize={CORPUS_SIZE}
-          />
-        </section>
 
         <section className={styles.section}>
           <div className={styles.sectionHead}>
@@ -518,6 +513,9 @@ export default async function StudyOverviewPage() {
             </div>
           )}
         </section>
+            </>
+          }
+        />
       </main>
     </>
   );

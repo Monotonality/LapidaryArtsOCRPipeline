@@ -1,6 +1,12 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import {
+  Children,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import styles from "./study.module.css";
 
 export type TimingPair = {
@@ -158,16 +164,14 @@ function ChartCard({
   help,
   children,
   actions,
-  wide,
 }: {
   title: string;
   help?: string;
   children: ReactNode;
   actions?: ReactNode;
-  wide?: boolean;
 }) {
   return (
-    <div className={`${styles.chartCard} ${wide ? styles.chartCardWide : ""}`}>
+    <div className={`${styles.chartCard} ${styles.chartCardFocus}`}>
       <div className={styles.chartCardHead}>
         <div>
           <h3 className={styles.chartCardTitle}>{title}</h3>
@@ -175,7 +179,80 @@ function ChartCard({
         </div>
         {actions}
       </div>
-      {children}
+      <div className={styles.chartStage}>{children}</div>
+    </div>
+  );
+}
+
+function ChartCarousel({ children }: { children: ReactNode }) {
+  const slides = Children.toArray(children);
+  const count = slides.length;
+  const [index, setIndex] = useState(0);
+
+  const go = (dir: -1 | 1) => {
+    setIndex((i) => (i + dir + count) % count);
+  };
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setIndex((i) => (i - 1 + count) % count);
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setIndex((i) => (i + 1) % count);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [count]);
+
+  if (count === 0) return null;
+
+  return (
+    <div className={styles.chartCarousel}>
+      <div className={styles.chartCarouselBar}>
+        <button
+          type="button"
+          className={styles.chartNavBtn}
+          onClick={() => go(-1)}
+          aria-label="Previous graph"
+        >
+          ←
+        </button>
+        <div className={styles.chartCarouselMeta}>
+          <span className={styles.chartCarouselCount}>
+            {index + 1} / {count}
+          </span>
+          <span className={styles.chartCarouselHint}>
+            Use ← → keys to move between graphs
+          </span>
+        </div>
+        <button
+          type="button"
+          className={styles.chartNavBtn}
+          onClick={() => go(1)}
+          aria-label="Next graph"
+        >
+          →
+        </button>
+      </div>
+      {slides[index]}
+      <div className={styles.chartDots} role="tablist" aria-label="Graphs">
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            role="tab"
+            aria-selected={i === index}
+            aria-label={`Graph ${i + 1}`}
+            className={`${styles.chartDot} ${
+              i === index ? styles.chartDotActive : ""
+            }`}
+            onClick={() => setIndex(i)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -195,7 +272,6 @@ export function OverviewCharts({
   const [deltaSort, setDeltaSort] = useState<"label" | "delta-desc" | "delta-asc">(
     "delta-desc",
   );
-  const [showAllBars, setShowAllBars] = useState(false);
 
   const controlSecs = useMemo(
     () => pairs.map((p) => p.controlSec).filter((v): v is number => v !== null),
@@ -385,7 +461,7 @@ export function OverviewCharts({
   );
 
   return (
-    <div className={styles.chartGrid}>
+    <ChartCarousel>
       <ChartCard
         title="Mean time ± 95% CI"
         help="Control vs experimental open-to-submit duration."
@@ -595,7 +671,6 @@ export function OverviewCharts({
       <ChartCard
         title="Per-record speed deltas"
         help="Lollipop of control − experimental for each paired label."
-        wide
         actions={
           <label className={styles.chartToggle}>
             Sort{" "}
@@ -1146,29 +1221,15 @@ export function OverviewCharts({
       <ChartCard
         title="All records · control vs experimental"
         help="Dual bars for every corpus label with timing. Scroll horizontally."
-        wide
-        actions={
-          <button
-            type="button"
-            className={styles.chartButton}
-            onClick={() => setShowAllBars((v) => !v)}
-          >
-            {showAllBars ? "Hide" : "Show"} drill-down
-          </button>
-        }
       >
-        {!showAllBars ? (
-          <p className={styles.chartFoot}>
-            Collapsed by default — {pairs.length} labels ready.
-          </p>
-        ) : pairs.every((p) => p.controlSec === null && p.experimentalSec === null) ? (
+        {pairs.every((p) => p.controlSec === null && p.experimentalSec === null) ? (
           <p className={styles.empty}>No timing rows.</p>
         ) : (
           <div className={styles.chartScroll}>
             <svg
               width={Math.max(640, pairs.length * 10 + 50)}
-              height={240}
-              viewBox={`0 0 ${Math.max(640, pairs.length * 10 + 50)} 240`}
+              height={320}
+              viewBox={`0 0 ${Math.max(640, pairs.length * 10 + 50)} 320`}
               className={styles.chartSvgWide}
               role="img"
               aria-label="Control and experimental times for every corpus label"
@@ -1187,7 +1248,7 @@ export function OverviewCharts({
                     1,
                   ),
                 );
-                const innerH = 240 - pad.t - pad.b;
+                const innerH = 320 - pad.t - pad.b;
                 const groupW = 10;
                 return (
                   <>
@@ -1221,7 +1282,7 @@ export function OverviewCharts({
                         <g key={p.label}>
                           <rect
                             x={x}
-                            y={240 - pad.b - cH}
+                            y={320 - pad.b - cH}
                             width={3}
                             height={cH}
                             className={styles.chartBarControl}
@@ -1232,7 +1293,7 @@ export function OverviewCharts({
                           </rect>
                           <rect
                             x={x + 4}
-                            y={240 - pad.b - eH}
+                            y={320 - pad.b - eH}
                             width={3}
                             height={eH}
                             className={styles.chartBarExperimental}
@@ -1261,6 +1322,6 @@ export function OverviewCharts({
           </div>
         )}
       </ChartCard>
-    </div>
+    </ChartCarousel>
   );
 }
