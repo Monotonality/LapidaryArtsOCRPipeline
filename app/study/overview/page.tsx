@@ -84,6 +84,48 @@ export default async function StudyOverviewPage() {
   ).length;
   const datePromisedExcludingNovel = datePromisedWrong - datePromisedNovel;
 
+  // Field accuracy: share of field slots that were not marked wrong.
+  // Each audit contributes up to 6 fields. When excluding novel format,
+  // date_promised is dropped from both the denominator and the error count
+  // for rows tagged novel_promissory_format.
+  let fieldSlotsIncluding = 0;
+  let fieldWrongIncluding = 0;
+  let fieldSlotsExcludingNovel = 0;
+  let fieldWrongExcludingNovel = 0;
+  for (const v of validations) {
+    const wrongs = [
+      v.wrong_client_name,
+      v.wrong_phone_number,
+      v.wrong_date,
+      v.wrong_date_promised,
+      v.wrong_instructions,
+      v.wrong_price,
+    ];
+    fieldSlotsIncluding += wrongs.length;
+    fieldWrongIncluding += wrongs.filter(Boolean).length;
+
+    const skipDatePromised = v.novel_promissory_format;
+    const wrongsExcl = skipDatePromised
+      ? [
+          v.wrong_client_name,
+          v.wrong_phone_number,
+          v.wrong_date,
+          v.wrong_instructions,
+          v.wrong_price,
+        ]
+      : wrongs;
+    fieldSlotsExcludingNovel += wrongsExcl.length;
+    fieldWrongExcludingNovel += wrongsExcl.filter(Boolean).length;
+  }
+  const fieldAccuracyIncluding =
+    fieldSlotsIncluding > 0
+      ? 1 - fieldWrongIncluding / fieldSlotsIncluding
+      : null;
+  const fieldAccuracyExcludingNovel =
+    fieldSlotsExcludingNovel > 0
+      ? 1 - fieldWrongExcludingNovel / fieldSlotsExcludingNovel
+      : null;
+
   const inputTokens = experimental.reduce(
     (sum, r) => sum + (r.input_tokens ?? 0),
     0,
@@ -184,28 +226,57 @@ export default async function StudyOverviewPage() {
               validation.
             </p>
           ) : (
-            <div className={styles.tableWrap}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Field</th>
-                    <th className={styles.tableNum}>Marked wrong</th>
-                    <th className={styles.tableNum}>Share</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {wrongRows.map((r) => (
-                    <tr key={r.field}>
-                      <td>{r.field}</td>
-                      <td className={styles.tableNum}>{r.count}</td>
-                      <td className={styles.tableNum}>
-                        {fmtPercent(r.count / validations.length)}
-                      </td>
+            <>
+              <div className={styles.statGrid}>
+                <div className={styles.statCard}>
+                  <span className={styles.statLabel}>
+                    Field accuracy (excl. novel)
+                  </span>
+                  <span className={styles.statValue}>
+                    {fmtPercent(fieldAccuracyExcludingNovel)}
+                  </span>
+                  <span className={styles.statHint}>
+                    {fieldSlotsExcludingNovel - fieldWrongExcludingNovel} /{" "}
+                    {fieldSlotsExcludingNovel} fields correct · date promised
+                    dropped when novel format
+                  </span>
+                </div>
+                <div className={styles.statCard}>
+                  <span className={styles.statLabel}>
+                    Field accuracy (incl. novel)
+                  </span>
+                  <span className={styles.statValue}>
+                    {fmtPercent(fieldAccuracyIncluding)}
+                  </span>
+                  <span className={styles.statHint}>
+                    {fieldSlotsIncluding - fieldWrongIncluding} /{" "}
+                    {fieldSlotsIncluding} fields correct · all six fields
+                  </span>
+                </div>
+              </div>
+              <div className={styles.tableWrap}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Field</th>
+                      <th className={styles.tableNum}>Marked wrong</th>
+                      <th className={styles.tableNum}>Share</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {wrongRows.map((r) => (
+                      <tr key={r.field}>
+                        <td>{r.field}</td>
+                        <td className={styles.tableNum}>{r.count}</td>
+                        <td className={styles.tableNum}>
+                          {fmtPercent(r.count / validations.length)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </section>
 
