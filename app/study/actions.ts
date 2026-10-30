@@ -171,22 +171,42 @@ export async function saveStudyValidation(
     return { error: "Choose whether the record needs major correction." };
   }
 
-  const { error } = await supabase.from("study_validations").upsert(
-    {
-      corpus_label: corpusLabel,
-      validator: user.id,
-      major_correction: verdict === "yes",
-      wrong_client_name: formData.get("wrong_client_name") === "on",
-      wrong_phone_number: formData.get("wrong_phone_number") === "on",
-      wrong_date: formData.get("wrong_date") === "on",
-      wrong_date_promised: formData.get("wrong_date_promised") === "on",
-      wrong_instructions: formData.get("wrong_instructions") === "on",
-      wrong_price: formData.get("wrong_price") === "on",
-      notes: String(formData.get("notes") ?? "").trim() || null,
-      validated_at: new Date().toISOString(),
-    },
-    { onConflict: "corpus_label" },
-  );
+  const payload = {
+    major_correction: verdict === "yes",
+    wrong_client_name: formData.get("wrong_client_name") === "on",
+    wrong_phone_number: formData.get("wrong_phone_number") === "on",
+    wrong_date: formData.get("wrong_date") === "on",
+    wrong_date_promised: formData.get("wrong_date_promised") === "on",
+    wrong_instructions: formData.get("wrong_instructions") === "on",
+    wrong_price: formData.get("wrong_price") === "on",
+    notes: String(formData.get("notes") ?? "").trim() || null,
+    validated_at: new Date().toISOString(),
+  };
+
+  // Prefer update-in-place when the label is already audited so we do not
+  // reassign validator (upsert always sent validator: current user and then
+  // hit UPDATE USING against the existing owner).
+  const { data: existing, error: lookupError } = await supabase
+    .from("study_validations")
+    .select("id")
+    .eq("corpus_label", corpusLabel)
+    .maybeSingle();
+
+  if (lookupError) {
+    console.error("Failed to look up study validation", lookupError);
+    return { error: lookupError.message };
+  }
+
+  const { error } = existing
+    ? await supabase
+        .from("study_validations")
+        .update(payload)
+        .eq("id", existing.id)
+    : await supabase.from("study_validations").insert({
+        corpus_label: corpusLabel,
+        validator: user.id,
+        ...payload,
+      });
 
   if (error) {
     console.error("Failed to save study validation", error);

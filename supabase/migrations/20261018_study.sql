@@ -9,8 +9,9 @@
 --     duration_seconds is generated from the two timestamps so it can never
 --     drift from the logged times.
 --   * Single-tenant: any signed-in member may read study rows (the validator
---     and overview pages need cross-user reads); writes are scoped to the
---     participant/validator who created them via auth.uid().
+--     and overview pages need cross-user reads). Entry inserts/updates are
+--     scoped to the participant; validation inserts are scoped to the
+--     validator, but validation updates are open so audits can be corrected.
 
 -- ============================================================
 -- Entries: one row per (condition, corpus record)
@@ -123,11 +124,14 @@ create policy study_validations_insert on public.study_validations
   for insert to authenticated
   with check (validator = auth.uid());
 
+-- Updates are open to any signed-in member (single-tenant study). Upserts on
+-- corpus_label take the UPDATE path; locking them to validator = auth.uid()
+-- blocks re-edits and corrections by other members.
 drop policy if exists study_validations_update on public.study_validations;
 create policy study_validations_update on public.study_validations
   for update to authenticated
-  using (validator = auth.uid())
-  with check (validator = auth.uid());
+  using (true)
+  with check (true);
 
 drop policy if exists study_validations_delete on public.study_validations;
 create policy study_validations_delete on public.study_validations
