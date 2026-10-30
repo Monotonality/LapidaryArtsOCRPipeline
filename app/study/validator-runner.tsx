@@ -31,8 +31,30 @@ export type ExistingValidation = {
   wrong_date_promised: boolean;
   wrong_instructions: boolean;
   wrong_price: boolean;
+  novel_promissory_format: boolean;
   notes: string | null;
 };
+
+type BrowseFilter =
+  | "all"
+  | "major"
+  | "wrong_date_promised"
+  | "wrong_date_promised_novel"
+  | "wrong_date_promised_not_novel";
+
+const BROWSE_OPTIONS: { value: BrowseFilter; label: string }[] = [
+  { value: "all", label: "All records" },
+  { value: "major", label: "Major correction" },
+  { value: "wrong_date_promised", label: "Wrong date promised" },
+  {
+    value: "wrong_date_promised_novel",
+    label: "Wrong date promised · novel format",
+  },
+  {
+    value: "wrong_date_promised_not_novel",
+    label: "Wrong date promised · not novel",
+  },
+];
 
 const WRONG_KEYS = [
   "wrong_client_name",
@@ -71,6 +93,20 @@ function fieldValue(
   return displayValue(statusFromRow(entry)[key], entry[key]);
 }
 
+function matchesFilter(
+  v: ExistingValidation | undefined,
+  filter: BrowseFilter,
+): boolean {
+  if (filter === "all") return true;
+  if (!v) return false;
+  if (filter === "major") return v.major_correction;
+  if (filter === "wrong_date_promised") return v.wrong_date_promised;
+  if (filter === "wrong_date_promised_novel") {
+    return v.wrong_date_promised && v.novel_promissory_format;
+  }
+  return v.wrong_date_promised && !v.novel_promissory_format;
+}
+
 export function ValidatorRunner({
   experimentalByLabel,
   controlByLabel,
@@ -80,15 +116,33 @@ export function ValidatorRunner({
   controlByLabel: Record<string, ValidatorEntry>;
   validationsByLabel: Record<string, ExistingValidation>;
 }) {
+  const [localValidations, setLocalValidations] = useState(validationsByLabel);
+  useEffect(() => {
+    setLocalValidations(validationsByLabel);
+  }, [validationsByLabel]);
+
+  const [browseFilter, setBrowseFilter] = useState<BrowseFilter>("all");
+
   const pending = useMemo(() => {
     const withEntry = CORPUS.filter(
       (c) => experimentalByLabel[c.label] !== undefined,
     );
     const awaiting = withEntry.filter(
-      (c) => validationsByLabel[c.label] === undefined,
+      (c) => localValidations[c.label] === undefined,
     );
     return awaiting.length > 0 ? awaiting : withEntry;
-  }, [experimentalByLabel, validationsByLabel]);
+  }, [experimentalByLabel, localValidations]);
+
+  const filteredLabels = useMemo(() => {
+    if (browseFilter === "all") {
+      return CORPUS.filter(
+        (c) => experimentalByLabel[c.label] !== undefined,
+      ).map((c) => c.label);
+    }
+    return CORPUS.filter((c) =>
+      matchesFilter(localValidations[c.label], browseFilter),
+    ).map((c) => c.label);
+  }, [browseFilter, experimentalByLabel, localValidations]);
 
   const [label, setLabel] = useState<string | null>(
     pending[0]?.label ?? CORPUS[0]?.label ?? null,
@@ -102,6 +156,7 @@ export function ValidatorRunner({
     wrong_instructions: false,
     wrong_price: false,
   });
+  const [novelFormat, setNovelFormat] = useState(false);
   const [notes, setNotes] = useState("");
   const [photoMissing, setPhotoMissing] = useState(false);
   const [audited, setAudited] = useState<Set<string>>(() => {
@@ -116,11 +171,20 @@ export function ValidatorRunner({
   const handledSaveRef = useRef<number | null>(null);
   const savedAtRef = useRef<number | null>(null);
 
+  // Jump into the filtered list when the browse mode changes.
+  useEffect(() => {
+    if (filteredLabels.length === 0) return;
+    if (label && filteredLabels.includes(label)) return;
+    setLabel(filteredLabels[0] ?? null);
+    // Only when the user changes Browse — save handling advances on its own.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional
+  }, [browseFilter]);
+
   // Re-apply stored values and reset local state when the record changes.
   useEffect(() => {
     setPhotoMissing(false);
     if (!label) return;
-    const existing = validationsByLabel[label];
+    const existing = localValidations[label];
     setVerdict(existing ? (existing.major_correction ? "yes" : "no") : "");
     setWrongs({
       wrong_client_name: existing?.wrong_client_name ?? false,
@@ -130,8 +194,9 @@ export function ValidatorRunner({
       wrong_instructions: existing?.wrong_instructions ?? false,
       wrong_price: existing?.wrong_price ?? false,
     });
+    setNovelFormat(existing?.novel_promissory_format ?? false);
     setNotes(existing?.notes ?? "");
-  }, [label, validationsByLabel]);
+  }, [label, localValidations]);
 
   // Advance after a successful save.
   useEffect(() => {
@@ -140,32 +205,88 @@ export function ValidatorRunner({
     handledSaveRef.current = savedAt;
     savedAtRef.current = savedAt;
 
+    const savedValidation: ExistingValidation = {
+      major_correction: verdict === "yes",
+      wrong_client_name: wrongs.wrong_client_name,
+      wrong_phone_number: wrongs.wrong_phone_number,
+      wrong_date: wrongs.wrong_date,
+      wrong_date_promised: wrongs.wrong_date_promised,
+      wrong_instructions: wrongs.wrong_instructions,
+      wrong_price: wrongs.wrong_price,
+      novel_promissory_format: novelFormat,
+      notes: notes || null,
+    };
+
+    setLocalValidations((prev) => ({
+      ...prev,
+      [label]: savedValidation,
+    }));
     setAudited((prev) => {
       const next = new Set(prev);
       next.add(label);
       return next;
     });
 
-    const next = CORPUS.find(
+    if (browseFilter !== "all") {
+      const idx = filteredLabels.indexOf(label);
+      const ordered = [
+        ...filteredLabels.slice(idx + 1),
+        ...filteredLabels.slice(0, idx),
+      ];
+      const nextInFilter = ordered.find((l) =>
+        matchesFilter(localValidations[l], browseFilter),
+      );
+      if (nextInFilter) setLabel(nextInFilter);
+      return;
+    }
+
+    const nextUnaudited = CORPUS.find(
       (c) =>
         c.label !== label &&
         experimentalByLabel[c.label] !== undefined &&
         !audited.has(c.label),
     );
-    if (next) {
-      setLabel(next.label);
+    if (nextUnaudited) {
+      setLabel(nextUnaudited.label);
     }
-  }, [state.savedAt, label, audited, experimentalByLabel]);
+  }, [
+    state.savedAt,
+    label,
+    audited,
+    experimentalByLabel,
+    browseFilter,
+    filteredLabels,
+    localValidations,
+    verdict,
+    wrongs,
+    novelFormat,
+    notes,
+  ]);
 
   const item = CORPUS.find((c) => c.label === label) ?? null;
   const experimental = label ? experimentalByLabel[label] : undefined;
   const control = label ? controlByLabel[label] : undefined;
 
+  const jumpLabels =
+    browseFilter === "all"
+      ? CORPUS.filter((c) => experimentalByLabel[c.label] !== undefined).map(
+          (c) => c.label,
+        )
+      : filteredLabels;
+
+  const wrongDatePromisedCount = Object.values(localValidations).filter(
+    (v) => v.wrong_date_promised,
+  ).length;
+  const novelAmongWrong = Object.values(localValidations).filter(
+    (v) => v.wrong_date_promised && v.novel_promissory_format,
+  ).length;
+
   if (!item) {
     return (
       <p className={styles.empty}>
-        Nothing to validate yet. Experimental entries appear here as soon as
-        they are saved.
+        {browseFilter === "all"
+          ? "Nothing to validate yet. Experimental entries appear here as soon as they are saved."
+          : "No audited records match this filter."}
       </p>
     );
   }
@@ -178,6 +299,21 @@ export function ValidatorRunner({
           {audited.size} / {CORPUS.length} audited
         </span>
         <span className={styles.jumpRow}>
+          <label htmlFor="vbrowse">Browse</label>
+          <select
+            id="vbrowse"
+            className={styles.select}
+            value={browseFilter}
+            onChange={(e) => setBrowseFilter(e.target.value as BrowseFilter)}
+          >
+            {BROWSE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </span>
+        <span className={styles.jumpRow}>
           <label htmlFor="vjump">Jump to</label>
           <select
             id="vjump"
@@ -185,15 +321,20 @@ export function ValidatorRunner({
             value={item.label}
             onChange={(e) => setLabel(e.target.value)}
           >
-            {CORPUS.map((c) => {
+            {jumpLabels.map((l) => {
+              const c = CORPUS.find((row) => row.label === l);
+              if (!c) return null;
               const hasEntry = experimentalByLabel[c.label] !== undefined;
+              const v = localValidations[c.label];
               const mark = audited.has(c.label)
-                ? " (audited)"
+                ? v?.novel_promissory_format
+                  ? " (audited · novel)"
+                  : " (audited)"
                 : hasEntry
                   ? " (pending)"
                   : "";
               return (
-                <option key={c.label} value={c.label} disabled={!hasEntry}>
+                <option key={c.label} value={c.label}>
                   {c.label}
                   {mark}
                 </option>
@@ -201,7 +342,24 @@ export function ValidatorRunner({
             })}
           </select>
         </span>
+        {browseFilter !== "all" && (
+          <span className={styles.progressText}>
+            {filteredLabels.length} in filter
+          </span>
+        )}
       </div>
+
+      <p className={styles.filterHint}>
+        Date promised wrong: {wrongDatePromisedCount}
+        {wrongDatePromisedCount > 0
+          ? ` · novel format ${novelAmongWrong} (${(
+              (novelAmongWrong / wrongDatePromisedCount) *
+              100
+            ).toFixed(0)}%) · excluding novel ${
+              wrongDatePromisedCount - novelAmongWrong
+            }`
+          : ""}
+      </p>
 
       {state.error && (
         <p role="alert" className={styles.alertError}>
@@ -275,6 +433,11 @@ export function ValidatorRunner({
               value={wrongs[key] ? "on" : ""}
             />
           ))}
+          <input
+            type="hidden"
+            name="novel_promissory_format"
+            value={novelFormat ? "on" : ""}
+          />
           <input type="hidden" name="notes" value={notes} />
 
           <span className={styles.compareColHead}>
@@ -313,6 +476,20 @@ export function ValidatorRunner({
                   />
                   Mark wrong
                 </label>
+                {key === "date_promised" && (
+                  <label
+                    className={`${styles.wrongRow} ${
+                      novelFormat ? styles.wrongOn : ""
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={novelFormat}
+                      onChange={(e) => setNovelFormat(e.target.checked)}
+                    />
+                    Novel promissory format
+                  </label>
+                )}
               </div>
             );
           })}

@@ -78,6 +78,12 @@ export default async function StudyOverviewPage() {
     price: validations.filter((v) => v.wrong_price).length,
   };
 
+  const datePromisedWrong = wrongCounts.date_promised;
+  const datePromisedNovel = validations.filter(
+    (v) => v.wrong_date_promised && v.novel_promissory_format,
+  ).length;
+  const datePromisedExcludingNovel = datePromisedWrong - datePromisedNovel;
+
   const inputTokens = experimental.reduce(
     (sum, r) => sum + (r.input_tokens ?? 0),
     0,
@@ -199,6 +205,61 @@ export default async function StudyOverviewPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2>Date promised · novel format</h2>
+            <p className={styles.sectionHelp}>
+              Cards that use relative wording (&quot;10 days&quot;, &quot;week-ish&quot;) instead of
+              a calendar date. Use these to report date-promised error rate
+              including vs excluding that pattern.
+            </p>
+          </div>
+          {validations.length === 0 ? (
+            <p className={styles.empty}>No audits yet.</p>
+          ) : (
+            <div className={styles.statGrid}>
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Wrong (all)</span>
+                <span className={styles.statValue}>{datePromisedWrong}</span>
+                <span className={styles.statHint}>
+                  {fmtPercent(
+                    validations.length > 0
+                      ? datePromisedWrong / validations.length
+                      : null,
+                  )}{" "}
+                  of audited
+                </span>
+              </div>
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Novel format</span>
+                <span className={styles.statValue}>{datePromisedNovel}</span>
+                <span className={styles.statHint}>
+                  {fmtPercent(
+                    datePromisedWrong > 0
+                      ? datePromisedNovel / datePromisedWrong
+                      : null,
+                  )}{" "}
+                  of date-promised wrong
+                </span>
+              </div>
+              <div className={styles.statCard}>
+                <span className={styles.statLabel}>Wrong excl. novel</span>
+                <span className={styles.statValue}>
+                  {datePromisedExcludingNovel}
+                </span>
+                <span className={styles.statHint}>
+                  {fmtPercent(
+                    validations.length > 0
+                      ? datePromisedExcludingNovel / validations.length
+                      : null,
+                  )}{" "}
+                  of audited
+                </span>
+              </div>
             </div>
           )}
         </section>

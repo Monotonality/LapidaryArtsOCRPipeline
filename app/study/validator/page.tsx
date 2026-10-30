@@ -44,6 +44,7 @@ function toValidationMap(
       wrong_date_promised: row.wrong_date_promised,
       wrong_instructions: row.wrong_instructions,
       wrong_price: row.wrong_price,
+      novel_promissory_format: row.novel_promissory_format ?? false,
       notes: row.notes,
     };
   }

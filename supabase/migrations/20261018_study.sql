@@ -60,6 +60,7 @@ create table if not exists public.study_validations (
   wrong_date_promised boolean not null default false,
   wrong_instructions boolean not null default false,
   wrong_price boolean not null default false,
+  novel_promissory_format boolean not null default false,
   notes text,
   validated_at timestamptz not null default now()
 );

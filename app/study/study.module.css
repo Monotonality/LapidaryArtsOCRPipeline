@@ -128,6 +128,14 @@
   font-variant-numeric: tabular-nums;
 }
 
+.filterHint {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
 .timer {
   font-family: var(--font-mono);
   font-size: 1.125rem;

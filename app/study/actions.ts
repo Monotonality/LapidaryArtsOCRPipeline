@@ -39,6 +39,7 @@ export type StudyValidationRow = {
   wrong_date_promised: boolean;
   wrong_instructions: boolean;
   wrong_price: boolean;
+  novel_promissory_format: boolean;
   notes: string | null;
   validated_at: string;
 };
@@ -179,6 +180,8 @@ export async function saveStudyValidation(
     wrong_date_promised: formData.get("wrong_date_promised") === "on",
     wrong_instructions: formData.get("wrong_instructions") === "on",
     wrong_price: formData.get("wrong_price") === "on",
+    novel_promissory_format:
+      formData.get("novel_promissory_format") === "on",
     notes: String(formData.get("notes") ?? "").trim() || null,
     validated_at: new Date().toISOString(),
   };
@@ -214,6 +217,8 @@ export async function saveStudyValidation(
   }
 
   revalidatePath("/study");
+  revalidatePath("/study/validator");
+  revalidatePath("/study/overview");
   return { saved: true, savedAt: Date.now() };
 }
 
