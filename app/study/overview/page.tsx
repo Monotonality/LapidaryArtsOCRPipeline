@@ -2,9 +2,15 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Navbar } from "@/app/navbar";
-import { CORPUS_SIZE } from "../corpus";
+import { CORPUS, CORPUS_SIZE } from "../corpus";
 import type { StudyArchiveRow, StudyEntryRow, StudyValidationRow } from "../actions";
 import { ArchiveForm } from "../archive-form";
+import {
+  OverviewCharts,
+  type CostPoint,
+  type TimingPair,
+  type ValidationChartRow,
+} from "../overview-charts";
 import styles from "../study.module.css";
 
 function mean(rows: StudyEntryRow[]): number | null {
@@ -189,10 +195,59 @@ export default async function StudyOverviewPage() {
     { field: "Price", count: wrongCounts.price },
   ];
 
+  const controlByLabel = new Map(
+    control.map((r) => [r.corpus_label, r] as const),
+  );
+  const experimentalByLabel = new Map(
+    experimental.map((r) => [r.corpus_label, r] as const),
+  );
+
+  const timingPairs: TimingPair[] = CORPUS.map((c) => {
+    const ctrl = controlByLabel.get(c.label);
+    const exp = experimentalByLabel.get(c.label);
+    const controlSec = ctrl ? Number(ctrl.duration_seconds) : null;
+    const experimentalSec = exp ? Number(exp.duration_seconds) : null;
+    let pairedAt: string | null = null;
+    if (ctrl && exp) {
+      pairedAt =
+        ctrl.submitted_at > exp.submitted_at
+          ? ctrl.submitted_at
+          : exp.submitted_at;
+    }
+    return {
+      label: c.label,
+      controlSec: Number.isFinite(controlSec) ? controlSec : null,
+      experimentalSec: Number.isFinite(experimentalSec)
+        ? experimentalSec
+        : null,
+      pairedAt,
+    };
+  });
+
+  const validationChartRows: ValidationChartRow[] = validations.map((v) => ({
+    corpus_label: v.corpus_label,
+    major_correction: v.major_correction,
+    validated_at: v.validated_at,
+    wrong_client_name: v.wrong_client_name,
+    wrong_phone_number: v.wrong_phone_number,
+    wrong_date: v.wrong_date,
+    wrong_date_promised: v.wrong_date_promised,
+    wrong_instructions: v.wrong_instructions,
+    wrong_price: v.wrong_price,
+    novel_promissory_format: v.novel_promissory_format ?? false,
+  }));
+
+  const costPoints: CostPoint[] = experimental.map((r) => ({
+    label: r.corpus_label,
+    submitted_at: r.submitted_at,
+    input_tokens: r.input_tokens ?? 0,
+    output_tokens: r.output_tokens ?? 0,
+  }));
+
   return (
     <>
       <Navbar email={user.email ?? ""} />
-      <main className={styles.main}>
+      <main className={`${styles.main} ${styles.mainWide}`}>
         <div className={styles.subhead}>
           <div className={styles.pageTitle}>
             <h1>Study overview</h1>
@@ -211,6 +266,23 @@ export default async function StudyOverviewPage() {
             </div>
           ))}
         </div>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHead}>
+            <h2>Charts</h2>
+            <p className={styles.sectionHelp}>
+              Timing, accuracy, progress, and cost views. Use the novel-format
+              toggle on field charts to report date-promised errors with or
+              without relative wording.
+            </p>
+          </div>
+          <OverviewCharts
+            pairs={timingPairs}
+            validations={validationChartRows}
+            costs={costPoints}
+            corpusSize={CORPUS_SIZE}
+          />
+        </section>
 
         <section className={styles.section}>
           <div className={styles.sectionHead}>
