@@ -261,12 +261,11 @@ export function OverviewCharts({
   pairs,
   validations,
   costs,
-  corpusSize,
 }: {
   pairs: TimingPair[];
   validations: ValidationChartRow[];
   costs: CostPoint[];
-  corpusSize: number;
+  corpusSize?: number;
 }) {
   const [excludeNovel, setExcludeNovel] = useState(true);
   const [deltaSort, setDeltaSort] = useState<"label" | "delta-desc" | "delta-asc">(
@@ -338,17 +337,6 @@ export function OverviewCharts({
     }
     return out;
   }, [deltas, pairs]);
-
-  const progress = useMemo(() => {
-    const ordered = [...validations].sort((a, b) =>
-      a.validated_at.localeCompare(b.validated_at),
-    );
-    return ordered.map((v, i) => ({
-      n: i + 1,
-      at: v.validated_at,
-      pending: Math.max(0, corpusSize - (i + 1)),
-    }));
-  }, [validations, corpusSize]);
 
   const costSeries = useMemo(() => {
     const ordered = [...costs].sort((a, b) =>
@@ -873,68 +861,6 @@ export function OverviewCharts({
       </ChartCard>
 
       <ChartCard
-        title="Audit progress"
-        help="Cumulative audited records over validation order; remainder is pending corpus."
-      >
-        {progress.length === 0 ? (
-          <p className={styles.empty}>No audits yet.</p>
-        ) : (
-          <svg
-            viewBox="0 0 420 220"
-            className={styles.chartSvg}
-            role="img"
-            aria-label="Cumulative audited versus pending records"
-          >
-            {(() => {
-              const pad = { t: 16, r: 16, b: 36, l: 44 };
-              const innerW = 420 - pad.l - pad.r;
-              const innerH = 220 - pad.t - pad.b;
-              const yMax = niceMax(corpusSize);
-              const xOf = (n: number) =>
-                pad.l + ((n - 1) / Math.max(progress.length - 1, 1)) * innerW;
-              const yOf = (v: number) => pad.t + innerH * (1 - v / yMax);
-              const audited = progress
-                .map(
-                  (p, i) =>
-                    `${i === 0 ? "M" : "L"}${xOf(p.n).toFixed(1)},${yOf(p.n).toFixed(1)}`,
-                )
-                .join(" ");
-              return (
-                <>
-                  <Axis
-                    width={420}
-                    height={220}
-                    pad={pad}
-                    yMax={yMax}
-                    yFmt={(v) => `${Math.round(v)}`}
-                  />
-                  <line
-                    x1={pad.l}
-                    x2={420 - pad.r}
-                    y1={yOf(corpusSize)}
-                    y2={yOf(corpusSize)}
-                    className={styles.chartGoal}
-                  />
-                  <path d={audited} className={styles.chartLine} fill="none" />
-                  <text x={pad.l} y={212} className={styles.chartTick}>
-                    first audit
-                  </text>
-                  <text
-                    x={420 - pad.r}
-                    y={212}
-                    textAnchor="end"
-                    className={styles.chartTick}
-                  >
-                    {progress.length} audited · {corpusSize - progress.length} pending
-                  </text>
-                </>
-              );
-            })()}
-          </svg>
-        )}
-      </ChartCard>
-
-      <ChartCard
         title="Cumulative API cost"
         help="Running OCR cost from logged experimental tokens ($0.03/1M in, $0.13/1M out)."
       >
@@ -1119,7 +1045,7 @@ export function OverviewCharts({
 
       <ChartCard
         title="Field-level errors"
-        help="Wrong-mark rate per field. Date promised splits novel format as a second segment."
+        help="Wrong-mark rate per field. Date promised stacks novel-format cases in purple (not double-counted)."
         actions={novelToggle}
       >
         {validations.length === 0 ? (
@@ -1150,36 +1076,36 @@ export function OverviewCharts({
                   />
                   {fieldStats.map((f, i) => {
                     const x = pad.l + i * (barW + gap);
-                    const mainShare = excludeNovel
-                      ? f.key === "wrong_date_promised"
-                        ? f.wrong / validations.length
-                        : f.share
-                      : f.share;
+                    // Non-novel wrongs only in the red segment. Novel date-promised
+                    // is a separate purple stack so totals are not double-counted.
+                    const mainShare = f.wrong / validations.length;
                     const novelShare =
                       !excludeNovel && f.key === "wrong_date_promised"
                         ? f.novelWrong / validations.length
                         : 0;
                     const mainH = mainShare * innerH;
                     const novelH = novelShare * innerH;
-                    const yMain = 240 - pad.b - mainH - novelH;
+                    const yBase = 240 - pad.b;
+                    // Stack novel (purple) under regular wrong (red) so the full
+                    // height is regular + novel when the toggle is off.
+                    const yNovel = yBase - novelH;
+                    const yMain = yNovel - mainH;
+                    const shortLabel =
+                      f.key === "wrong_date_promised"
+                        ? "Promised"
+                        : f.key === "wrong_client_name"
+                          ? "Client"
+                          : f.key === "wrong_phone_number"
+                            ? "Phone"
+                            : f.key === "wrong_instructions"
+                              ? "Instr."
+                              : f.label;
                     return (
                       <g key={f.key}>
-                        <rect
-                          x={x}
-                          y={yMain}
-                          width={barW}
-                          height={mainH}
-                          className={styles.chartBarDanger}
-                          rx={1}
-                        >
-                          <title>
-                            {f.label}: {(mainShare * 100).toFixed(1)}%
-                          </title>
-                        </rect>
                         {novelH > 0 && (
                           <rect
                             x={x}
-                            y={yMain + mainH}
+                            y={yNovel}
                             width={barW}
                             height={novelH}
                             className={styles.chartBarNovel}
@@ -1190,13 +1116,31 @@ export function OverviewCharts({
                             </title>
                           </rect>
                         )}
+                        <rect
+                          x={x}
+                          y={yMain}
+                          width={barW}
+                          height={mainH}
+                          className={styles.chartBarDanger}
+                          rx={1}
+                        >
+                          <title>
+                            {f.label}: {(mainShare * 100).toFixed(1)}%
+                            {novelShare > 0
+                              ? ` + novel ${(novelShare * 100).toFixed(1)}% = ${(
+                                  (mainShare + novelShare) *
+                                  100
+                                ).toFixed(1)}%`
+                              : ""}
+                          </title>
+                        </rect>
                         <text
                           x={x + barW / 2}
                           y={228}
                           textAnchor="middle"
                           className={styles.chartTickSmall}
                         >
-                          {f.label.split(" ")[0]}
+                          {shortLabel}
                         </text>
                       </g>
                     );
