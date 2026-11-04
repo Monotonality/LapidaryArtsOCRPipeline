@@ -1,3 +1,5 @@
+import { isHeic, convertHeicToJpeg } from "./heic";
+
 export const FIELD_KEYS = [
   "client_name",
   "phone_number",
@@ -55,11 +57,57 @@ Instructions can contain individually priced line items. These are never the tot
 
 Return only JSON matching the supplied schema. Do not put reasoning in a field.`;
 
-export function imageToBase64(file: File): Promise<string> {
-  return new Promise(async (resolve, reject) => {
+function imageElementToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      try {
+        const width = img.naturalWidth || img.width;
+        const height = img.naturalHeight || img.height;
+        if (!width || !height) {
+          throw new Error("The image has invalid dimensions.");
+        }
+        const scale = Math.min(1, 1600 / Math.max(width, height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(width * scale));
+        canvas.height = Math.max(1, Math.round(height * scale));
+        const context = canvas.getContext("2d");
+        if (!context) throw new Error("Image processing is unavailable in this browser.");
+        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.9).split(",")[1]);
+      } catch (err) {
+        reject(err);
+      }
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("Could not decode this photo. Please choose a valid JPEG or PNG image."));
+    };
+    img.src = url;
+  });
+}
+
+export async function imageToBase64(file: File): Promise<string> {
+  let fileToProcess = file;
+  if (await isHeic(file)) {
+    fileToProcess = await convertHeicToJpeg(file);
+  }
+
+  let bitmap: ImageBitmap | null = null;
+  try {
+    bitmap = await createImageBitmap(fileToProcess, { imageOrientation: "from-image" });
+  } catch {
     try {
-      // createImageBitmap applies the photo's EXIF orientation before drawing.
-      const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+      bitmap = await createImageBitmap(fileToProcess);
+    } catch {
+      bitmap = null;
+    }
+  }
+
+  if (bitmap) {
+    try {
       const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
       const canvas = document.createElement("canvas");
       canvas.width = Math.max(1, Math.round(bitmap.width * scale));
@@ -68,11 +116,13 @@ export function imageToBase64(file: File): Promise<string> {
       if (!context) throw new Error("Image processing is unavailable in this browser.");
       context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
       bitmap.close();
-      resolve(canvas.toDataURL("image/jpeg", 0.9).split(",")[1]);
-    } catch (error) {
-      reject(error);
+      return canvas.toDataURL("image/jpeg", 0.9).split(",")[1];
+    } catch {
+      bitmap.close();
     }
-  });
+  }
+
+  return await imageElementToBase64(fileToProcess);
 }
 
 export function parseFields(content: string): ModelFields {

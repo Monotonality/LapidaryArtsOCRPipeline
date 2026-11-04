@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { FIELD_KEYS, validateFields, type CheckedFields } from "./reader";
 import { checkOpenRouter, readWithOpenRouter, type OpenRouterStatus } from "./openrouter";
+import { isHeic, convertHeicToJpeg } from "./heic";
 import styles from "./add.module.css";
 
 export function PhotoReader({
@@ -17,6 +18,7 @@ export function PhotoReader({
   const [file, setFile] = useState<File | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [converting, setConverting] = useState(false);
   const [openRouterStatus, setOpenRouterStatus] = useState<OpenRouterStatus | null>(null);
   const [seconds, setSeconds] = useState<number | null>(null);
   const [note, setNote] = useState("");
@@ -52,18 +54,43 @@ export function PhotoReader({
       if (!response.ok) throw new Error("Local test fixture is missing.");
       return response.blob();
     }).then((blob) => {
-      if (alive.current) selectFile(new File([blob], `${fixture}.webp`, { type: "image/webp" }));
+      if (alive.current) void selectFile(new File([blob], `${fixture}.webp`, { type: "image/webp" }));
     }).catch(() => {
       if (alive.current) setError("Local test fixture is missing.");
     });
   }, [demo]);
 
-  function selectFile(next: File | null) {
+  async function selectFile(next: File | null) {
     if (!next) return;
     abort.current?.abort();
+    setError("");
+    setSeconds(null);
+
+    let processed = next;
+    try {
+      if (await isHeic(next)) {
+        setConverting(true);
+        setNote("Converting HEIC photo to JPEG…");
+        processed = await convertHeicToJpeg(next);
+        setNote("");
+      }
+    } catch (err) {
+      if (alive.current) {
+        setError(err instanceof Error ? err.message : "Could not decode this HEIC photo.");
+        setNote("");
+        setConverting(false);
+      }
+      return;
+    } finally {
+      if (alive.current) {
+        setConverting(false);
+      }
+    }
+
+    if (!alive.current) return;
     onPhotoChange(true);
-    setFile(next);
-    setImageUrl(URL.createObjectURL(next));
+    setFile(processed);
+    setImageUrl(URL.createObjectURL(processed));
     setError("");
     setNote("");
     setSeconds(null);
@@ -108,11 +135,20 @@ export function PhotoReader({
             type="file"
             accept="image/*"
             capture="environment"
-            onChange={(event) => selectFile(event.target.files?.[0] ?? null)}
+            disabled={converting}
+            onChange={(event) => void selectFile(event.target.files?.[0] ?? null)}
             className={styles.photoInput}
           />
-          <span className={styles.photoDropTitle}>Take a photo of the job card</span>
-          <span className={styles.photoDropHint}>Tap to open the camera, or choose an image from your device.</span>
+          <span className={styles.photoDropTitle}>
+            {converting ? "Converting photo to JPEG…" : "Take a photo of the job card"}
+          </span>
+          <span className={styles.photoDropHint}>
+            {converting
+              ? "Preparing image for preview and OCR…"
+              : "Tap to open the camera, or choose an image from your device."}
+          </span>
+          {note && <p className={styles.ocrNote} role="status">{note}</p>}
+          {error && <p className={styles.ocrNoteError} role="alert">{error}</p>}
         </label>
       ) : (
         <div className={styles.photoReview}>
@@ -120,10 +156,10 @@ export function PhotoReader({
             <button
               type="button"
               onClick={readPhoto}
-              disabled={busy || !openRouterStatus?.configured}
+              disabled={busy || converting || !openRouterStatus?.configured}
               className={styles.ocrButton}
             >
-              {busy ? "Reading invoice…" : "Read invoice with AI"}
+              {busy ? "Reading invoice…" : converting ? "Converting photo…" : "Read invoice with AI"}
             </button>
             {busy && (
               <button
@@ -136,7 +172,7 @@ export function PhotoReader({
             )}
             <button
               type="button"
-              disabled={busy}
+              disabled={busy || converting}
               onClick={() => {
                 abort.current?.abort();
                 onPhotoChange(false);
@@ -169,6 +205,11 @@ export function PhotoReader({
             alt="Job card for OCR and field review"
             className={styles.preview}
             draggable={false}
+            onError={() => {
+              if (alive.current) {
+                setError("The image preview could not be displayed. The photo format might not be supported by your browser.");
+              }
+            }}
           />
 
           {note && <p className={styles.ocrNote} role="status">{note}</p>}

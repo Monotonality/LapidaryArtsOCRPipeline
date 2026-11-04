@@ -3,7 +3,9 @@ import { updateSession } from "@/lib/supabase/proxy";
 
 export async function proxy(request: NextRequest) {
   if (process.env.NODE_ENV === "development" &&
-      (request.nextUrl.pathname === "/ocr-demo" || request.nextUrl.pathname === "/api/openrouter/read")) {
+      (request.nextUrl.pathname === "/ocr-demo" ||
+       request.nextUrl.pathname === "/api/openrouter/read" ||
+       request.nextUrl.pathname === "/api/convert-image")) {
     return NextResponse.next();
   }
   return await updateSession(request);
