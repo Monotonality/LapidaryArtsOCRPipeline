@@ -19,7 +19,7 @@ const EMPTY: RecordFields = {
 };
 
 export function AddRecord({ demo = false }: { demo?: boolean }) {
-  const [mode, setMode] = useState<Mode>("form");
+  const [mode, setMode] = useState<Mode>("photo");
   const [form, setForm] = useState<RecordFields>(EMPTY);
   const [status, setStatus] = useState<StatusMap>(EMPTY_STATUS);
   const [edited, setEdited] = useState<Set<FieldKey>>(new Set());
@@ -80,10 +80,10 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
   return (
     <div ref={stageRef} className={styles.stage}>
       <div className={styles.tabs} role="tablist" aria-label="Add a record">
-        <button type="button" role="tab" aria-selected={mode === "form"}
-          onClick={() => setMode("form")} className={mode === "form" ? styles.tabActive : styles.tab}>Form</button>
         <button type="button" role="tab" aria-selected={mode === "photo"}
           onClick={() => setMode("photo")} className={mode === "photo" ? styles.tabActive : styles.tab}>Photo</button>
+        <button type="button" role="tab" aria-selected={mode === "form"}
+          onClick={() => setMode("form")} className={mode === "form" ? styles.tabActive : styles.tab}>Form</button>
       </div>
 
       <div className={styles.photoWrapper} hidden={mode !== "photo"}>

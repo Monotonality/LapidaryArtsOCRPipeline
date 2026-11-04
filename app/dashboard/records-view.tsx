@@ -18,6 +18,7 @@ export type RecordRow = {
   phone_number: string | null;
   date: string | null;
   date_promised: string | null;
+  instructions: string | null;
   price: string | number | null;
   na_fields: string[] | null;
   invalid_fields: string[] | null;
@@ -149,6 +150,7 @@ const EXPORT_COLUMNS = [
   "Phone",
   "Date",
   "Date promised",
+  "Instructions",
   "Price",
   "Created",
   "Updated",
@@ -303,6 +305,7 @@ export function RecordsView({ records }: { records: RecordRow[] }) {
       cellText(r, "phone_number"),
       cellText(r, "date"),
       cellText(r, "date_promised"),
+      cellText(r, "instructions"),
       cellText(r, "price"),
       r.created_at ? new Date(r.created_at).toLocaleString() : "",
       r.updated_at ? new Date(r.updated_at).toLocaleString() : "",
