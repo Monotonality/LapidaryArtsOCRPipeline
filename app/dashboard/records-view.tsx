@@ -6,6 +6,7 @@ import {
   dateToIso,
   displayValue,
   isoToDate,
+  promisedDisplay,
   statusFromRow,
   type FieldKey,
 } from "@/lib/record-fields";
@@ -18,6 +19,7 @@ export type RecordRow = {
   phone_number: string | null;
   date: string | null;
   date_promised: string | null;
+  date_promised_text: string | null;
   instructions: string | null;
   price: string | number | null;
   na_fields: string[] | null;
@@ -98,12 +100,17 @@ function emailOf(
   return ref?.email ?? null;
 }
 
-/** Table/CSV text for a field: N/A or Invalid when flagged, dates as MM-DD-YY. */
+/**
+ * Table/CSV text for a field: N/A or Invalid when flagged, dates as MM-DD-YY,
+ * and Date promised as written with its due date ("2-3 weeks (by 11-26-26)").
+ */
 function cellText(row: RecordRow, key: FieldKey & keyof RecordRow): string {
   const value = row[key] as string | number | null;
-  const shown = key === "date" || key === "date_promised"
-    ? isoToDate(value as string | null)
-    : value;
+  const shown = key === "date_promised"
+    ? promisedDisplay(row.date_promised_text, row.date_promised)
+    : key === "date"
+      ? isoToDate(value as string | null)
+      : value;
   return displayValue(statusFromRow(row)[key], shown);
 }
 

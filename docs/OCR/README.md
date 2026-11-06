@@ -66,20 +66,30 @@ totals. Staff must still compare every value with the photo.
 The shared validator in [`app/add/reader.ts`](../../app/add/reader.ts) applies
 to model results:
 
+Every value the model reads is pre-filled in the form for staff to check;
+nothing is saved until staff tick that they checked it against the photo. The
+validator decides what is pre-filled and what gets a "Check:" note (purple)
+under the field:
+
 | Field | Current rule |
 | --- | --- |
-| Client Name | Suggestion only; staff confirm handwriting and spelling. |
-| Phone Number | Suggestion only, even when it has 7 or 10 digits. The printed store phone cannot be auto-filled or accepted as a suggestion. A plausible but wrong digit passed format checks in testing. |
-| Date Received | Fill only a valid calendar date with matching source evidence; callback notes must not be treated as this field. |
-| Date Promised | Fill only a valid calendar date. Durations remain suggestions because the database column is a date. |
-| Instructions / Article Details | Suggestion only; staff confirm all lines, prices, and abbreviations. |
-| Price | Fill one numeric amount only when the evidence identifies TOTAL CHARGES and quotes the amount. Item prices, deposit, and balance are not totals. |
+| Client Name | Pre-filled; staff confirm handwriting and spelling. |
+| Phone Number | Pre-filled. Flagged unless it has 7 or 10 digits, or the older one-digit area code form ("9) 890-2734"). The printed store phone is never filled. A plausible but wrong digit can pass these checks, so staff still compare it with the photo. |
+| Date Received | Filled only as a valid calendar date; otherwise left blank with a note showing what was read. Callback notes are not this field. |
+| Date Promised | Free text, kept as written ("2-3 weeks", "10 days ish"). A plain date is stored as a date. A box that is only a duration, or a month/day with no year, also gets a due date worked out from Date Received; the form says how it will be saved. |
+| Instructions / Article Details | Pre-filled; staff confirm all lines, prices, and abbreviations. |
+| Price | One amount ("125", "125.00", "125.-", "1,234.50"). Flagged when the evidence does not mention the total. Item prices, deposit, and balance are not totals. |
 
-Low-confidence readings or readings without required evidence stay blank for
-review. The form shows suggestions and their evidence beside each input. Staff
-can accept, correct, or leave them blank, then must confirm that they checked
-the values against the photo before saving. A model failure does not block
+The model also reports whether each field's box is written, blank, or
+unreadable. Blank fields are pre-ticked N/A; unreadable ones are left empty
+with a note. Low-confidence readings, missing or mismatched evidence, and
+values that fail the checks above get a "Check:" note with the reason and the
+model's quote. Ticking N/A or Invalid, or typing in a field, keeps that field
+as staff set it if the photo is read again. A model failure does not block
 manual entry.
+
+Study pages (`/study/*`) use their own prompt and keep Date Promised as an
+MM-DD-YY date, so collected study data stays comparable.
 
 ## Relevant files
 

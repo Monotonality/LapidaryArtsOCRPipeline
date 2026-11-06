@@ -35,7 +35,7 @@ export default async function EditRecordPage({
   const { data: record } = await supabase
     .from("records")
     .select(
-      "id, client_name, phone_number, date, date_promised, instructions, price, na_fields, invalid_fields",
+      "id, client_name, phone_number, date, date_promised, date_promised_text, instructions, price, na_fields, invalid_fields",
     )
     .eq("id", id)
     .maybeSingle();
@@ -59,7 +59,8 @@ export default async function EditRecordPage({
             client_name: record.client_name ?? "",
             phone_number: record.phone_number ?? "",
             date: isoToDate(record.date),
-            date_promised: isoToDate(record.date_promised),
+            // Show what was written ("2-3 weeks"); saving works the due date out again.
+            date_promised: record.date_promised_text ?? isoToDate(record.date_promised),
             instructions: record.instructions ?? "",
             price: record.price == null ? "" : String(record.price),
           }}

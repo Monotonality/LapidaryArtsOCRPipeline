@@ -6,6 +6,20 @@ import { checkOpenRouter, readWithOpenRouter, type OpenRouterStatus } from "./op
 import { isHeic, convertHeicToJpeg } from "./heic";
 import styles from "./add.module.css";
 
+/** "4 of 6 fields filled, 1 blank on the card (marked N/A), 2 flagged to check." */
+function readSummary(checked: CheckedFields): string {
+  const count = (test: (key: (typeof FIELD_KEYS)[number]) => boolean) => FIELD_KEYS.filter(test).length;
+  const filled = count((key) => Boolean(checked[key].reviewValue));
+  const blank = count((key) => checked[key].presence === "blank");
+  const unread = count((key) => checked[key].presence === "unreadable");
+  const flagged = count((key) => checked[key].presence === "written" && checked[key].issues.length > 0);
+  const parts = [`${filled} of 6 fields filled`];
+  if (blank) parts.push(`${blank} blank on the card (marked N/A)`);
+  if (unread) parts.push(`${unread} couldn't be read`);
+  if (flagged) parts.push(`${flagged} flagged to check`);
+  return `${parts.join(", ")}.`;
+}
+
 export function PhotoReader({
   onPhotoChange,
   onModel,
@@ -111,8 +125,7 @@ export function PhotoReader({
       const checked = validateFields(result.fields);
       onModel(checked);
       setSeconds(result.seconds);
-      const filled = FIELD_KEYS.filter((key) => Boolean(checked[key].reviewValue)).length;
-      setNote(`AI reader finished in ${result.seconds.toFixed(1)}s. ${filled} of 6 fields filled from the photo; check them against the photo before saving.`);
+      setNote(`AI reader finished in ${result.seconds.toFixed(1)}s. ${readSummary(checked)} Check them against the photo before saving.`);
     } catch (err) {
       if (!alive.current) return;
       if (controller.signal.aborted) {

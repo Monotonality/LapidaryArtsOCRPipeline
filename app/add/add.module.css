@@ -357,6 +357,25 @@
   box-shadow: 0 0 0 3px var(--ring);
 }
 
+/* Notes under a field: how it will be saved, and what the AI read flagged.
+   Purple = model output (see docs/style-guide.md). */
+.hint,
+.hintCheck {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.hintCheck {
+  color: var(--purple);
+}
+
+.input.inputCheck,
+.textarea.inputCheck {
+  border-color: var(--purple);
+}
+
 .formActions {
   display: flex;
   align-items: center;

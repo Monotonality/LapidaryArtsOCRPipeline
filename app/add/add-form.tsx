@@ -5,7 +5,8 @@ import { createRecord } from "./actions";
 import { FIELD_KEYS, type FieldKey, type CheckedFields } from "./reader";
 import { PhotoReader } from "./photo-reader";
 import {
-  EMPTY_STATUS, STATUS_TEXT, isoToDate, statusToColumns,
+  EMPTY_STATUS, PROMISED_MAX_LENGTH, PROMISED_PLACEHOLDER, STATUS_TEXT, isoToDate, normalizeDate,
+  promisedSummary, statusToColumns,
   type FieldStatus, type StatusMap,
 } from "@/lib/record-fields";
 import { DateInput, FieldStatusTicks, useKeepScrollWhileTyping } from "@/app/field-inputs";
@@ -22,7 +23,19 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
   const [mode, setMode] = useState<Mode>("photo");
   const [form, setForm] = useState<RecordFields>(EMPTY);
   const [status, setStatus] = useState<StatusMap>(EMPTY_STATUS);
-  const [edited, setEdited] = useState<Set<FieldKey>>(new Set());
+  const [edited, setEditedState] = useState<Set<FieldKey>>(new Set());
+  // applyModel runs when an AI read finishes, from a closure made when it
+  // started; the ref sees fields typed into while the read was running.
+  const editedRef = useRef<Set<FieldKey>>(new Set());
+  const setEdited = (next: Set<FieldKey>) => {
+    editedRef.current = next;
+    setEditedState(next);
+  };
+  const markEdited = (key: FieldKey) => setEdited(new Set(editedRef.current).add(key));
+  // Fields whose N/A / Invalid tick staff changed. A later AI read keeps their
+  // status, but (unlike typing) a tick doesn't hide the AI's note.
+  const tickedRef = useRef<Set<FieldKey>>(new Set());
+  const [ocr, setOcr] = useState<CheckedFields | null>(null);
   const [reviewed, setReviewed] = useState(false);
   const [hasPhoto, setHasPhoto] = useState(false);
   const [photoKey, setPhotoKey] = useState(0);
@@ -35,12 +48,13 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
 
   function set(key: FieldKey, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
-    setEdited((current) => new Set(current).add(key));
+    markEdited(key);
     setReviewed(false);
   }
 
   function setFieldStatus(key: FieldKey, next: FieldStatus) {
     setStatus((current) => ({ ...current, [key]: next }));
+    tickedRef.current = new Set(tickedRef.current).add(key);
     setReviewed(false);
   }
 
@@ -48,29 +62,72 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
     <FieldStatusTicks status={status[key]} onChange={(next) => setFieldStatus(key, next)} className={styles.naTick} />
   );
 
+  // What the AI read says about a field, until staff edit it.
+  const ocrField = (key: FieldKey) => (ocr && !edited.has(key) ? ocr[key] : null);
+  const needsCheck = (key: FieldKey) => {
+    const field = ocrField(key);
+    return Boolean(field && status[key] === "value" &&
+      (field.presence === "unreadable" || field.issues.length > 0));
+  };
+  const inputClass = (key: FieldKey, base: string) => needsCheck(key) ? `${base} ${styles.inputCheck}` : base;
+
+  function hint(key: FieldKey) {
+    const field = ocrField(key);
+    if (!field) return null;
+    if (field.presence === "blank") {
+      return status[key] === "na"
+        ? <span className={styles.hint}>Blank on the card, so marked N/A. Untick if that&apos;s wrong.</span>
+        : null;
+    }
+    if (!needsCheck(key)) return null;
+    if (field.presence === "unreadable") {
+      return <span className={styles.hintCheck}>AI couldn&apos;t read this. Check the photo.</span>;
+    }
+    return (
+      <span className={styles.hintCheck}>
+        Check: {field.issues.join("; ")}.{field.evidence ? ` AI quoted: ${field.evidence}` : ""}
+      </span>
+    );
+  }
+
+  const promisedNote = status.date_promised === "value"
+    ? promisedSummary(form.date_promised, status.date === "value" ? form.date : "")
+    : null;
+
   function clearAll() {
     setForm(EMPTY);
     setStatus(EMPTY_STATUS);
     setEdited(new Set());
+    tickedRef.current = new Set();
+    setOcr(null);
     setReviewed(false);
     setHasPhoto(false);
     setPhotoKey((key) => key + 1);
   }
 
   function applyModel(fields: CheckedFields) {
+    const edited = editedRef.current;
+    setOcr(fields);
     setForm((current) => {
       const next = { ...current };
       for (const key of FIELD_KEYS) {
         if (edited.has(key)) continue;
         const value = fields[key].reviewValue ?? "";
-        next[key] = key === "date" || key === "date_promised" ? isoToDate(value) : value;
+        next[key] = key === "date" ? isoToDate(value)
+          : key === "date_promised" ? normalizeDate(value) ?? value
+            : value;
       }
       return next;
     });
     setStatus((current) => {
       const next = { ...current };
       for (const key of FIELD_KEYS) {
-        if (!edited.has(key) && fields[key].reviewValue) next[key] = "value";
+        if (edited.has(key) || tickedRef.current.has(key)) continue;
+        if (fields[key].reviewValue) next[key] = "value";
+        // The box is empty on the card: say so instead of leaving a silent blank.
+        else if (fields[key].presence === "blank") next[key] = "na";
+        // A re-read that can't make it out undoes an N/A from an earlier read.
+        else next[key] = "value";
       }
       return next;
     });
@@ -90,7 +147,7 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
         <PhotoReader
           key={photoKey}
           onPhotoChange={(selected) => {
-            setHasPhoto(selected); setForm(EMPTY); setStatus(EMPTY_STATUS); setEdited(new Set()); setReviewed(false);
+            setHasPhoto(selected); setForm(EMPTY); setStatus(EMPTY_STATUS); setEdited(new Set()); tickedRef.current = new Set(); setOcr(null); setReviewed(false);
           }}
           onModel={applyModel}
           demo={demo}
@@ -108,7 +165,8 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
             </span>
             <input name="client_name" type="text" value={na.client_name ? "" : form.client_name} onChange={(event) => set("client_name", event.target.value)}
               required={!na.client_name} disabled={na.client_name} autoComplete="off"
-              placeholder={flagText("client_name") ?? "e.g. Margaret Ellison"} className={styles.input} />
+              placeholder={flagText("client_name") ?? "e.g. Margaret Ellison"} className={inputClass("client_name", styles.input)} />
+            {hint("client_name")}
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
@@ -117,7 +175,8 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
             </span>
             <input name="phone_number" type="tel" value={na.phone_number ? "" : form.phone_number} onChange={(event) => set("phone_number", event.target.value)}
               disabled={na.phone_number} autoComplete="off"
-              placeholder={flagText("phone_number") ?? "e.g. 214-555-0137"} className={styles.input} />
+              placeholder={flagText("phone_number") ?? "e.g. 214-555-0137"} className={inputClass("phone_number", styles.input)} />
+            {hint("phone_number")}
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
@@ -125,15 +184,20 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
               {ticks("date")}
             </span>
             <DateInput name="date" value={na.date ? "" : form.date} onValueChange={(value) => set("date", value)}
-              disabled={na.date} placeholder={flagText("date")} className={styles.input} />
+              disabled={na.date} placeholder={flagText("date")} className={inputClass("date", styles.input)} />
+            {hint("date")}
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
               <span className={styles.fieldLabel}>Date promised</span>
               {ticks("date_promised")}
             </span>
-            <DateInput name="date_promised" value={na.date_promised ? "" : form.date_promised} onValueChange={(value) => set("date_promised", value)}
-              disabled={na.date_promised} placeholder={flagText("date_promised")} className={styles.input} />
+            <input name="date_promised" type="text" value={na.date_promised ? "" : form.date_promised}
+              onChange={(event) => set("date_promised", event.target.value)}
+              disabled={na.date_promised} autoComplete="off" maxLength={PROMISED_MAX_LENGTH}
+              placeholder={flagText("date_promised") ?? PROMISED_PLACEHOLDER} className={inputClass("date_promised", styles.input)} />
+            {hint("date_promised")}
+            {promisedNote && <span className={styles.hint}>{promisedNote}</span>}
           </label>
           <label className={styles.field}>
             <span className={styles.fieldHead}>
@@ -142,7 +206,8 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
             </span>
             <input name="price" type="text" inputMode="decimal" value={na.price ? "" : form.price} onChange={(event) => set("price", event.target.value)}
               disabled={na.price} autoComplete="off"
-              placeholder={flagText("price") ?? "e.g. 125.50"} className={styles.input} />
+              placeholder={flagText("price") ?? "e.g. 125.50"} className={inputClass("price", styles.input)} />
+            {hint("price")}
           </label>
           <label className={`${styles.field} ${styles.fieldFull}`}>
             <span className={styles.fieldHead}>
@@ -151,7 +216,8 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
             </span>
             <textarea name="instructions" value={na.instructions ? "" : form.instructions} onChange={(event) => set("instructions", event.target.value)}
               disabled={na.instructions} rows={4}
-              placeholder={flagText("instructions") ?? "e.g. Ring sizing; reset two stones."} className={styles.textarea} />
+              placeholder={flagText("instructions") ?? "e.g. Ring sizing; reset two stones."} className={inputClass("instructions", styles.textarea)} />
+            {hint("instructions")}
           </label>
         </div>
 

@@ -28,7 +28,7 @@ export async function updateRecord(
     return { error: "Missing record id." };
   }
 
-  const parsed = parseRecordForm(formData, "iso");
+  const parsed = parseRecordForm(formData, "iso", { promisedText: true });
   if ("error" in parsed) return { error: parsed.error };
 
   const { error } = await supabase

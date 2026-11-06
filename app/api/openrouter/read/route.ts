@@ -79,8 +79,9 @@ export async function POST(request: NextRequest) {
         // Reasoning tokens are billed as output. On a 16-card eval, reasoning off matched the
         // 512-token reasoning budget's accuracy at ~380 output tokens instead of ~880, in half the time.
         reasoning: { enabled: false },
-        temperature: 1,
-        top_p: 0.95,
+        // Transcription wants the most likely reading, the same way every time.
+        // At temperature 1 the same card could read differently on each retry.
+        temperature: 0,
       }),
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(270_000)]),
       cache: "no-store",
