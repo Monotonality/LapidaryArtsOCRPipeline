@@ -183,6 +183,106 @@ export function normalizeDate(value: string | null | undefined): string | null {
   return null;
 }
 
+// ---------------------------------------------------------------------------
+// Date promised: cards often say "2-3 weeks" or "10 days ish", not a date.
+// ---------------------------------------------------------------------------
+
+export const PROMISED_PLACEHOLDER = "e.g. 11-20-26 or 2-3 weeks";
+export const PROMISED_MAX_LENGTH = 100;
+
+export type Duration = { amount: number; unit: "day" | "week" | "month" };
+
+/**
+ * Find a duration such as "10 days", "2-3 weeks", "3wks" or "1 month" in free
+ * text. Ranges use the longer end, since that is the latest the shop promised.
+ */
+export function parseDuration(text: string): Duration | null {
+  const m =
+    /(\d{1,3})(?:\s*(?:-|–|—|to|or)\s*(\d{1,3}))?\s*(days?|weeks?|wks?|months?|mos?)\b/i.exec(
+      text,
+    );
+  if (!m) return null;
+  const amount = Math.max(Number(m[1]), m[2] ? Number(m[2]) : 0);
+  if (!amount) return null;
+  const u = m[3].toLowerCase();
+  const unit = u.startsWith("d") ? "day" : u.startsWith("w") ? "week" : "month";
+  return { amount, unit };
+}
+
+/** MM-DD-YY plus a duration, as MM-DD-YY. */
+export function addDuration(date: string, duration: Duration): string | null {
+  if (!isValidDate(date)) return null;
+  const [mm, dd, yy] = date.split("-").map(Number);
+  const out = new Date(Date.UTC(fullYear(yy), mm - 1, dd));
+  if (duration.unit === "month") {
+    // Clamp to the end of the month: Jan 31 + 1 month is Feb 28, not Mar 3.
+    const lastDay = new Date(Date.UTC(fullYear(yy), mm - 1 + duration.amount + 1, 0)).getUTCDate();
+    out.setUTCDate(1);
+    out.setUTCMonth(out.getUTCMonth() + duration.amount);
+    out.setUTCDate(Math.min(dd, lastDay));
+  } else {
+    out.setUTCDate(
+      out.getUTCDate() + duration.amount * (duration.unit === "week" ? 7 : 1),
+    );
+  }
+  return mdy(out.getUTCMonth() + 1, out.getUTCDate(), out.getUTCFullYear());
+}
+
+export type ResolvedPromised = {
+  /** MM-DD-YY due date, typed or worked out from a duration. */
+  date: string | null;
+  /** What was written, kept when it is not a plain date. */
+  text: string | null;
+  /** The duration used to work out `date`, when there was one. */
+  duration: Duration | null;
+};
+
+/**
+ * Turn the Date promised box into what gets stored: a plain date stays a date;
+ * anything else is kept as written, and a duration with a known Date received
+ * also gets a due date.
+ */
+export function resolvePromised(
+  raw: string,
+  received: string | null,
+): ResolvedPromised {
+  const text = raw.trim();
+  if (!text) return { date: null, text: null, duration: null };
+  const asDate = normalizeDate(text);
+  if (asDate) return { date: asDate, text: null, duration: null };
+  const duration = parseDuration(text);
+  const date =
+    duration && received && isValidDate(received)
+      ? addDuration(received, duration)
+      : null;
+  return { date, text, duration: date ? duration : null };
+}
+
+/** One-line note under the Date promised box saying how it will be saved. */
+export function promisedSummary(raw: string, received: string): string | null {
+  const text = raw.trim();
+  if (!text || normalizeDate(text)) return null;
+  const resolved = resolvePromised(text, received);
+  if (resolved.date && resolved.duration) {
+    const { amount, unit } = resolved.duration;
+    return `Saved as written, due by ${resolved.date} (date received + ${amount} ${unit}${amount === 1 ? "" : "s"}).`;
+  }
+  if (parseDuration(text)) {
+    return "Saved as written. Add the date received to work out a due date.";
+  }
+  return "Saved as written.";
+}
+
+/** Dashboard/CSV text for Date promised: what was written, plus the due date. */
+export function promisedDisplay(
+  text: string | null | undefined,
+  isoDate: string | null | undefined,
+): string {
+  const date = isoToDate(isoDate);
+  if (!text) return date;
+  return date ? `${text} (by ${date})` : text;
+}
+
 /** MM-DD-YY -> YYYY-MM-DD for Postgres date columns. */
 export function dateToIso(value: string): string | null {
   if (!isValidDate(value)) return null;
@@ -205,6 +305,8 @@ export type ParsedRecord = {
   phone_number: string | null;
   date: string | null;
   date_promised: string | null;
+  /** Only set for the records ledger (`promisedText: true`). */
+  date_promised_text?: string | null;
   instructions: string | null;
   price: number | null;
   na_fields: FieldKey[];
@@ -215,10 +317,15 @@ export type ParsedRecord = {
  * Read the six fields plus their status from a submitted form. Flagged fields
  * are stored as null. Dates must be MM-DD-YY; `dateStorage: "iso"` converts
  * them for Postgres date columns, `"text"` keeps MM-DD-YY.
+ *
+ * With `promisedText`, Date promised is free text ("2-3 weeks"): a plain date
+ * is stored as a date, anything else goes to date_promised_text, and a
+ * duration also gets a due date worked out from Date received.
  */
 export function parseRecordForm(
   formData: FormData,
   dateStorage: "iso" | "text",
+  { promisedText = false }: { promisedText?: boolean } = {},
 ): { record: ParsedRecord } | { error: string } {
   const status = statusFromForm(formData);
   const read = (key: FieldKey) =>
@@ -226,6 +333,7 @@ export function parseRecordForm(
 
   const dates: Partial<Record<FieldKey, string | null>> = {};
   for (const key of DATE_KEYS) {
+    if (promisedText && key === "date_promised") continue;
     const raw = read(key);
     if (!raw) {
       dates[key] = null;
@@ -237,6 +345,20 @@ export function parseRecordForm(
       };
     }
     dates[key] = dateStorage === "iso" ? dateToIso(raw) : raw;
+  }
+
+  let promisedTextValue: string | null = null;
+  if (promisedText) {
+    const raw = read("date_promised");
+    if (raw.length > PROMISED_MAX_LENGTH) {
+      return { error: `Date promised must be ${PROMISED_MAX_LENGTH} characters or fewer.` };
+    }
+    const received = read("date");
+    const resolved = resolvePromised(raw, isValidDate(received) ? received : null);
+    promisedTextValue = resolved.text;
+    dates.date_promised = resolved.date
+      ? dateStorage === "iso" ? dateToIso(resolved.date) : resolved.date
+      : null;
   }
 
   const rawPrice = read("price").replace(/^\$/, "").replaceAll(",", "");
@@ -251,6 +373,7 @@ export function parseRecordForm(
       phone_number: read("phone_number") || null,
       date: dates.date ?? null,
       date_promised: dates.date_promised ?? null,
+      ...(promisedText ? { date_promised_text: promisedTextValue } : {}),
       instructions: read("instructions") || null,
       price,
       ...statusToColumns(status),

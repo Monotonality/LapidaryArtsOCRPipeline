@@ -5,7 +5,10 @@ import Link from "next/link";
 import { updateRecord } from "./actions";
 import {
   FIELD_KEYS,
+  PROMISED_MAX_LENGTH,
+  PROMISED_PLACEHOLDER,
   STATUS_TEXT,
+  promisedSummary,
   statusToColumns,
   type FieldKey,
   type FieldStatus,
@@ -38,6 +41,9 @@ export function EditRecordForm({
   const flagText = (key: FieldKey) =>
     flagged(key) ? STATUS_TEXT[status[key] as "na" | "invalid"] : undefined;
   const value = (key: FieldKey) => (flagged(key) ? "" : form[key]);
+  const promisedNote = flagged("date_promised")
+    ? null
+    : promisedSummary(form.date_promised, form.date);
   const head = (key: FieldKey, label: string) => (
     <span className={styles.fieldHead}>
       <span className={styles.fieldLabel}>{label}</span>
@@ -105,13 +111,17 @@ export function EditRecordForm({
 
         <label className={styles.field}>
           {head("date_promised", "Date promised")}
-          <DateInput
+          <input
+            type="text"
             value={value("date_promised")}
-            onValueChange={(v) => set("date_promised", v)}
+            onChange={(e) => set("date_promised", e.target.value)}
             disabled={flagged("date_promised")}
-            placeholder={flagText("date_promised")}
+            autoComplete="off"
+            maxLength={PROMISED_MAX_LENGTH}
+            placeholder={flagText("date_promised") ?? PROMISED_PLACEHOLDER}
             className={styles.input}
           />
+          {promisedNote && <span className={styles.hint}>{promisedNote}</span>}
         </label>
 
         <label className={styles.field}>
