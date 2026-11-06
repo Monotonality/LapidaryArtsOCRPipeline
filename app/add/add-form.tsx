@@ -23,7 +23,15 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
   const [mode, setMode] = useState<Mode>("photo");
   const [form, setForm] = useState<RecordFields>(EMPTY);
   const [status, setStatus] = useState<StatusMap>(EMPTY_STATUS);
-  const [edited, setEdited] = useState<Set<FieldKey>>(new Set());
+  const [edited, setEditedState] = useState<Set<FieldKey>>(new Set());
+  // applyModel runs when an AI read finishes, from a closure made when it
+  // started; the ref sees fields typed into while the read was running.
+  const editedRef = useRef<Set<FieldKey>>(new Set());
+  const setEdited = (next: Set<FieldKey>) => {
+    editedRef.current = next;
+    setEditedState(next);
+  };
+  const markEdited = (key: FieldKey) => setEdited(new Set(editedRef.current).add(key));
   const [ocr, setOcr] = useState<CheckedFields | null>(null);
   const [reviewed, setReviewed] = useState(false);
   const [hasPhoto, setHasPhoto] = useState(false);
@@ -37,12 +45,14 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
 
   function set(key: FieldKey, value: string) {
     setForm((current) => ({ ...current, [key]: value }));
-    setEdited((current) => new Set(current).add(key));
+    markEdited(key);
     setReviewed(false);
   }
 
   function setFieldStatus(key: FieldKey, next: FieldStatus) {
     setStatus((current) => ({ ...current, [key]: next }));
+    // A ticked N/A or Invalid is a staff decision; a later AI read keeps it.
+    markEdited(key);
     setReviewed(false);
   }
 
@@ -78,7 +88,9 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
     );
   }
 
-  const promisedNote = status.date_promised === "value" ? promisedSummary(form.date_promised, form.date) : null;
+  const promisedNote = status.date_promised === "value"
+    ? promisedSummary(form.date_promised, status.date === "value" ? form.date : "")
+    : null;
 
   function clearAll() {
     setForm(EMPTY);
@@ -91,6 +103,7 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
   }
 
   function applyModel(fields: CheckedFields) {
+    const edited = editedRef.current;
     setOcr(fields);
     setForm((current) => {
       const next = { ...current };

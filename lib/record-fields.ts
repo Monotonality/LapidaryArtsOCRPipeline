@@ -192,15 +192,20 @@ export const PROMISED_MAX_LENGTH = 100;
 
 export type Duration = { amount: number; unit: "day" | "week" | "month" };
 
+// The whole box must be one duration ("2-3 weeks", "about 10 days ish",
+// "3wks", "10 days -"). Text that also says something else ("11/20 or 2
+// weeks", "call 2 days before", "3 weeks 2 days") is kept as written with no
+// due date, rather than guessing which number is the promise.
+const DURATION =
+  /^(?:about|approx\.?|around|~)?\s*(\d{1,3})(?:\s*(?:-|–|—|−|‑|to|or)\s*(\d{1,3}))?\s*(days?|d|weeks?|wks?|w|months?|mos?)\.?(?:\s*(?:ish|or so|max|-|–|\?|\.))*$/i;
+
 /**
- * Find a duration such as "10 days", "2-3 weeks", "3wks" or "1 month" in free
- * text. Ranges use the longer end, since that is the latest the shop promised.
+ * Read a Date promised box that is only a duration, such as "10 days",
+ * "2-3 weeks" or "3wks". Ranges use the longer end, since that is the latest
+ * the shop promised.
  */
 export function parseDuration(text: string): Duration | null {
-  const m =
-    /(\d{1,3})(?:\s*(?:-|–|—|to|or)\s*(\d{1,3}))?\s*(days?|weeks?|wks?|months?|mos?)\b/i.exec(
-      text,
-    );
+  const m = DURATION.exec(text.trim());
   if (!m) return null;
   const amount = Math.max(Number(m[1]), m[2] ? Number(m[2]) : 0);
   if (!amount) return null;
@@ -248,24 +253,40 @@ export function resolvePromised(
 ): ResolvedPromised {
   const text = raw.trim();
   if (!text) return { date: null, text: null, duration: null };
-  const asDate = normalizeDate(text);
+  // "11.20.26" is written on cards as often as "11/20/26".
+  const asDate = normalizeDate(text.replace(/\./g, "/"));
   if (asDate) return { date: asDate, text: null, duration: null };
+  const knownReceived = received && isValidDate(received) ? received : null;
+  // "11/20" with no year: the next 11/20 on or after the date received.
+  const monthDay = /^(\d{1,2})[/.-](\d{1,2})$/.exec(text);
+  if (monthDay && knownReceived) {
+    const yy = Number(knownReceived.slice(6));
+    const sameYear = normalizeDate(`${monthDay[1]}/${monthDay[2]}/${fullYear(yy)}`);
+    if (sameYear) {
+      const date = (dateToIso(sameYear) ?? "") >= (dateToIso(knownReceived) ?? "")
+        ? sameYear
+        : normalizeDate(`${monthDay[1]}/${monthDay[2]}/${fullYear(yy) + 1}`);
+      if (date) return { date, text, duration: null };
+    }
+  }
   const duration = parseDuration(text);
-  const date =
-    duration && received && isValidDate(received)
-      ? addDuration(received, duration)
-      : null;
+  const date = duration && knownReceived ? addDuration(knownReceived, duration) : null;
   return { date, text, duration: date ? duration : null };
 }
 
 /** One-line note under the Date promised box saying how it will be saved. */
 export function promisedSummary(raw: string, received: string): string | null {
   const text = raw.trim();
-  if (!text || normalizeDate(text)) return null;
+  if (!text) return null;
   const resolved = resolvePromised(text, received);
+  // A plain date ("11-20-26", "11.20.26") is saved as a date; nothing to explain.
+  if (!resolved.text) return null;
   if (resolved.date && resolved.duration) {
     const { amount, unit } = resolved.duration;
     return `Saved as written, due by ${resolved.date} (date received + ${amount} ${unit}${amount === 1 ? "" : "s"}).`;
+  }
+  if (resolved.date) {
+    return `Saved as written, due by ${resolved.date} (year taken from date received).`;
   }
   if (parseDuration(text)) {
     return "Saved as written. Add the date received to work out a due date.";

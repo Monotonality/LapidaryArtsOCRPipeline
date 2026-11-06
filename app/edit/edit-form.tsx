@@ -43,7 +43,7 @@ export function EditRecordForm({
   const value = (key: FieldKey) => (flagged(key) ? "" : form[key]);
   const promisedNote = flagged("date_promised")
     ? null
-    : promisedSummary(form.date_promised, form.date);
+    : promisedSummary(form.date_promised, flagged("date") ? "" : form.date);
   const head = (key: FieldKey, label: string) => (
     <span className={styles.fieldHead}>
       <span className={styles.fieldLabel}>{label}</span>

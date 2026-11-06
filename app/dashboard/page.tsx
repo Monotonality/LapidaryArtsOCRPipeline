@@ -25,13 +25,16 @@ export default async function DashboardPage() {
     redirect("/login?status=deleted");
   }
 
-  const { data: rows } = await supabase
+  const { data: rows, error: rowsError } = await supabase
     .from("records")
     .select(
       "id, client_name, phone_number, date, date_promised, date_promised_text, instructions, price, na_fields, invalid_fields, created_at, updated_at, created_by, updated_by",
     )
     .order("created_at", { ascending: false })
     .limit(1000);
+  // Say so when the ledger can't load (e.g. a migration that hasn't been
+  // applied yet) instead of showing an empty ledger.
+  if (rowsError) console.error("Failed to load records", rowsError);
 
   const userIds = [
     ...new Set(
@@ -67,7 +70,13 @@ export default async function DashboardPage() {
           <h1>Records ledger</h1>
         </div>
 
-        <RecordsView records={records} />
+        {rowsError ? (
+          <p role="alert" className={styles.loadError}>
+            Could not load records: {rowsError.message}
+          </p>
+        ) : (
+          <RecordsView records={records} />
+        )}
       </main>
     </>
   );

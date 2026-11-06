@@ -1,4 +1,5 @@
 import { isHeic, convertHeicToJpeg } from "./heic";
+import { PROMISED_MAX_LENGTH } from "@/lib/record-fields";
 
 export const FIELD_KEYS = [
   "client_name",
@@ -202,7 +203,7 @@ export function validateFields(fields: ModelFields): CheckedFields {
       } else if (
         digits.length !== 7 && digits.length !== 10 &&
         // Older cards write one area-code digit then the local number: "9) 890-2734".
-        !(digits.length === 8 && /^\s*\d\s*\)/.test(value))
+        !(digits.length === 8 && /^\s*\(?\s*\d\s*\)/.test(value))
       ) {
         issues.push(`Has ${digits.length} digits; phone numbers have 7 or 10`);
       }
@@ -211,10 +212,15 @@ export function validateFields(fields: ModelFields): CheckedFields {
       if (!reviewValue) issues.push(`Read as "${value}", which isn't a full date`);
     } else if (key === "date_promised") {
       // Free text: dates, durations ("2-3 weeks") and notes are all kept as written.
-      reviewValue = value;
+      reviewValue = value.slice(0, PROMISED_MAX_LENGTH);
+      if (value.length > PROMISED_MAX_LENGTH) {
+        issues.push(`Cut to ${PROMISED_MAX_LENGTH} characters`);
+      }
     } else if (key === "price") {
       // Handwritten whole-dollar prices are often written "125.-" or "125-".
-      const amount = value.replace(/^\$/, "").replaceAll(",", "").replace(/(?:\.|\s)*-+$/, "");
+      const trimmed = value.replace(/^\$\s*/, "").replace(/(?:\.|\s)*-+$/, "");
+      // Commas only as thousands separators: "1,234.50" yes, "12,50" no.
+      const amount = /^\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?$/.test(trimmed) ? trimmed.replaceAll(",", "") : trimmed;
       if (!/^\d+(?:\.\d{1,2})?$/.test(amount)) {
         reviewValue = null;
         issues.push(`Read as "${value}", which isn't one amount`);
@@ -226,15 +232,17 @@ export function validateFields(fields: ModelFields): CheckedFields {
       }
     }
 
-    if (item.confidence === "low") issues.push("AI wasn't sure about this one");
+    if (item.confidence === "low" || item.presence === "unreadable") {
+      issues.push("AI wasn't sure about this one");
+    }
     if (!item.evidence?.trim()) {
       issues.push("AI didn't quote the card for this");
     } else if (key === "phone_number" || key === "date" || key === "date_promised" || key === "price") {
       const valueDigits = value.replace(/\D/g, "");
       const evidenceDigits = item.evidence.replace(/\D/g, "");
-      const label = key === "date" ? /date\s*received/i :
-        key === "date_promised" ? /date\s*promised/i :
-          key === "phone_number" ? /phone/i : /total\s*charges?/i;
+      const label = key === "date" ? /date\s*rec/i :
+        key === "date_promised" ? /promised/i :
+          key === "phone_number" ? /\b(?:ph(?:one)?|tel)\b/i : /total/i;
       if (!label.test(item.evidence) || (valueDigits && !evidenceDigits.includes(valueDigits))) {
         issues.push("AI's quote doesn't match this field");
       }
