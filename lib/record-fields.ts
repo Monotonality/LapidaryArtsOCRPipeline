@@ -197,7 +197,7 @@ export type Duration = { amount: number; unit: "day" | "week" | "month" };
 // weeks", "call 2 days before", "3 weeks 2 days") is kept as written with no
 // due date, rather than guessing which number is the promise.
 const DURATION =
-  /^(?:about|approx\.?|around|~)?\s*(\d{1,3})(?:\s*(?:-|–|—|−|‑|to|or)\s*(\d{1,3}))?\s*(days?|d|weeks?|wks?|w|months?|mos?)\.?(?:\s*(?:ish|or so|max|-|–|\?|\.))*$/i;
+  /^\(?(?:(?:about|approximately|approx\.?|abt\.?|around|within|~)\s*)*(\d{1,3})\+?(?:\s*(?:-|–|—|−|‑|to|or)\s*(\d{1,3}))?\s*(days?|d|weeks?|wks?|w|months?|mos?)\.?(?:\s*(?:ish|or so|max|min|approx\.?|~|-|–|\?|!|\.|\)))*$/i;
 
 /**
  * Read a Date promised box that is only a duration, such as "10 days",
@@ -233,6 +233,9 @@ export function addDuration(date: string, duration: Duration): string | null {
   return mdy(out.getUTCMonth() + 1, out.getUTCDate(), out.getUTCFullYear());
 }
 
+/** How far after Date received a year-less "11/20" may land (days). */
+const MONTH_DAY_WINDOW = 180;
+
 export type ResolvedPromised = {
   /** MM-DD-YY due date, typed or worked out from a duration. */
   date: string | null;
@@ -257,16 +260,22 @@ export function resolvePromised(
   const asDate = normalizeDate(text.replace(/\./g, "/"));
   if (asDate) return { date: asDate, text: null, duration: null };
   const knownReceived = received && isValidDate(received) ? received : null;
-  // "11/20" with no year: the next 11/20 on or after the date received.
-  const monthDay = /^(\d{1,2})[/.-](\d{1,2})$/.exec(text);
+  // "11/20" with no year: the first 11/20 on or after the date received, if
+  // that is within MONTH_DAY_WINDOW days. Only "/" counts: "2-3" and "1.5" are
+  // more likely a range or a number with the unit left off. A month/day just
+  // before the date received (a misread or backdated card) is not pushed a
+  // year ahead; it stays text only.
+  const monthDay = /^(\d{1,2})\/(\d{1,2})$/.exec(text);
   if (monthDay && knownReceived) {
-    const yy = Number(knownReceived.slice(6));
-    const sameYear = normalizeDate(`${monthDay[1]}/${monthDay[2]}/${fullYear(yy)}`);
-    if (sameYear) {
-      const date = (dateToIso(sameYear) ?? "") >= (dateToIso(knownReceived) ?? "")
-        ? sameYear
-        : normalizeDate(`${monthDay[1]}/${monthDay[2]}/${fullYear(yy) + 1}`);
-      if (date) return { date, text, duration: null };
+    const year = fullYear(Number(knownReceived.slice(6)));
+    const receivedIso = dateToIso(knownReceived) ?? "";
+    for (const y of [year, year + 1]) {
+      const candidate = normalizeDate(`${monthDay[1]}/${monthDay[2]}/${y}`);
+      const iso = candidate ? dateToIso(candidate) : null;
+      if (!candidate || !iso || iso < receivedIso) continue;
+      const days = (Date.parse(iso) - Date.parse(receivedIso)) / 86_400_000;
+      if (days <= MONTH_DAY_WINDOW) return { date: candidate, text, duration: null };
+      break;
     }
   }
   const duration = parseDuration(text);

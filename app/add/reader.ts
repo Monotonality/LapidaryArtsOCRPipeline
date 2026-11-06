@@ -242,7 +242,7 @@ export function validateFields(fields: ModelFields): CheckedFields {
       const evidenceDigits = item.evidence.replace(/\D/g, "");
       const label = key === "date" ? /date\s*rec/i :
         key === "date_promised" ? /promised/i :
-          key === "phone_number" ? /\b(?:ph(?:one)?|tel)\b/i : /total/i;
+          key === "phone_number" ? /phone|\bph\b|\btel\b/i : /total/i;
       if (!label.test(item.evidence) || (valueDigits && !evidenceDigits.includes(valueDigits))) {
         issues.push("AI's quote doesn't match this field");
       }

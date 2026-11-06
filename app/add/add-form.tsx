@@ -32,6 +32,9 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
     setEditedState(next);
   };
   const markEdited = (key: FieldKey) => setEdited(new Set(editedRef.current).add(key));
+  // Fields whose N/A / Invalid tick staff changed. A later AI read keeps their
+  // status, but (unlike typing) a tick doesn't hide the AI's note.
+  const tickedRef = useRef<Set<FieldKey>>(new Set());
   const [ocr, setOcr] = useState<CheckedFields | null>(null);
   const [reviewed, setReviewed] = useState(false);
   const [hasPhoto, setHasPhoto] = useState(false);
@@ -51,8 +54,7 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
 
   function setFieldStatus(key: FieldKey, next: FieldStatus) {
     setStatus((current) => ({ ...current, [key]: next }));
-    // A ticked N/A or Invalid is a staff decision; a later AI read keeps it.
-    markEdited(key);
+    tickedRef.current = new Set(tickedRef.current).add(key);
     setReviewed(false);
   }
 
@@ -96,6 +98,7 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
     setForm(EMPTY);
     setStatus(EMPTY_STATUS);
     setEdited(new Set());
+    tickedRef.current = new Set();
     setOcr(null);
     setReviewed(false);
     setHasPhoto(false);
@@ -119,10 +122,12 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
     setStatus((current) => {
       const next = { ...current };
       for (const key of FIELD_KEYS) {
-        if (edited.has(key)) continue;
+        if (edited.has(key) || tickedRef.current.has(key)) continue;
         if (fields[key].reviewValue) next[key] = "value";
         // The box is empty on the card: say so instead of leaving a silent blank.
         else if (fields[key].presence === "blank") next[key] = "na";
+        // A re-read that can't make it out undoes an N/A from an earlier read.
+        else next[key] = "value";
       }
       return next;
     });
@@ -142,7 +147,7 @@ export function AddRecord({ demo = false }: { demo?: boolean }) {
         <PhotoReader
           key={photoKey}
           onPhotoChange={(selected) => {
-            setHasPhoto(selected); setForm(EMPTY); setStatus(EMPTY_STATUS); setEdited(new Set()); setOcr(null); setReviewed(false);
+            setHasPhoto(selected); setForm(EMPTY); setStatus(EMPTY_STATUS); setEdited(new Set()); tickedRef.current = new Set(); setOcr(null); setReviewed(false);
           }}
           onModel={applyModel}
           demo={demo}
