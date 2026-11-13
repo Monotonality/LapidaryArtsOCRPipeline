@@ -52,29 +52,12 @@
   gap: var(--space-5);
 }
 
-.panelMark {
-  width: 2.75rem;
+.panelWordmark {
+  display: block;
+  width: auto;
   height: 2.75rem;
-  border-radius: 4px;
-  background: #ffffff;
-  color: var(--gray-950);
-  display: grid;
-  place-items: center;
-  font-size: 1.25rem;
-  font-weight: 600;
-  border-bottom: 3px solid var(--green-500);
-}
-
-.panelMark::after {
-  content: "I";
-}
-
-.panelName {
-  font-size: 1.375rem;
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.1;
-  color: #ffffff;
+  /* Black ink on transparent; the panel is always dark. */
+  filter: invert(1);
 }
 
 .panelBody {
@@ -139,23 +122,16 @@
   user-select: none;
 }
 
-.mark {
-  width: 1.5rem;
+.wordmark {
+  display: block;
+  width: auto;
   height: 1.5rem;
-  border-radius: 3px;
-  background: var(--text);
-  border-bottom: 3px solid var(--green);
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
 }
 
-.mark::after {
-  content: "I";
-  color: var(--bg);
-  font-size: 0.75rem;
-  font-weight: 600;
-  line-height: 1;
+@media (prefers-color-scheme: dark) {
+  .wordmark {
+    filter: invert(1);
+  }
 }
 
 .brandName {
@@ -353,14 +329,8 @@
     gap: var(--space-3);
   }
 
-  .panelMark {
-    width: 1.75rem;
+  .panelWordmark {
     height: 1.75rem;
-    font-size: 1rem;
-  }
-
-  .panelName {
-    font-size: 1.0625rem;
   }
 
   .panelBody,
